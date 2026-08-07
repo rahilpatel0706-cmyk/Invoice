@@ -1,0 +1,9 @@
+{
+  "name": "jigar-invoice-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jigar Enterprise invoice, quotation and proforma system",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
+}
