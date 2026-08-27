@@ -692,8 +692,8 @@ const CO = {
   name:"Jigar Enterprise",
   a1:"2893 Sethia Building, Kadiakui, Relief Road",
   a2:"Ahmedabad, Gujarat - 380001 (India)",
-  phone:"+91 9408500184",
-  email:"hitechpumpsandmotors@gmail.com",
+  phone:"+91 8980002227",
+  email:"pumpbazar@yahoo.com",
   web:"hitechpumps.com",
   gstin:"24AKGPP9254R1ZA",
   stateCode:"24"
@@ -825,6 +825,7 @@ async function doLogin() {
   document.getElementById("ls").style.display="none";
   document.getElementById("app").style.display="block";
   initForm(); loadHist(); initQForm(); loadQHist(); initProfForm(); loadPHist();
+  applyPrefill();
 }
 async function doLogout() {
   await supabaseClient.auth.signOut();
@@ -837,6 +838,46 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Enter" && document.getElementById("ls").style.display!=="none") doLogin();
   if(e.key==="Escape" && document.getElementById("modal").classList.contains("open")) closeModal();
 });
+
+// ═══════════════════════════════════════════════════
+// PREFILL FROM REPAIR TRACKER
+// Reads #prefill=<base64 json> put in the URL by the
+// Hitech Repair Tracker's "Make Invoice" button and
+// fills the invoice form after login.
+// ═══════════════════════════════════════════════════
+let pendingPrefill=null;
+(function capturePrefill(){
+  try {
+    const m=location.hash.match(/prefill=([^&]+)/);
+    if(!m) return;
+    pendingPrefill=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+    history.replaceState(null,"",location.pathname+location.search); // clean URL so a reload doesn't re-apply
+  } catch(e){ pendingPrefill=null; }
+})();
+function applyPrefill() {
+  if(!pendingPrefill) return;
+  const d=pendingPrefill; pendingPrefill=null;
+  try {
+    switchTab("new");
+    if(d.name)   document.getElementById("f-cname").value=d.name;
+    if(d.mobile) document.getElementById("f-cmobile").value=d.mobile;
+    if(d.city) {
+      document.getElementById("f-cloc").value=d.city;
+      const dest=document.getElementById("f-dest");
+      if(dest && !dest.value) dest.value=d.city;
+    }
+    if(d.product) document.getElementById("pd-1").value=d.product;
+    document.getElementById("pq-1").value=d.qty||"1";
+    if(d.rate) document.getElementById("pr2-1").value=d.rate;
+    calcAmt(1);
+    if(d.jobId) {
+      const n=document.getElementById("f-notes");
+      if(n && !n.value) n.value="Repair Job ID: "+d.jobId;
+    }
+    showToast("Prefilled from Repair Tracker"+(d.name?" — "+d.name:""),"success");
+  } catch(e){ console.error("Prefill failed:",e); }
+}
+
 
 // ═══════════════════════════════════════════════════
 // TABS
@@ -2833,4 +2874,4 @@ function buildProfHTML(d){
   </body></html>`;
 }
 </script>
-</body></html>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a318cfb51c43ff9d',t:'MTc4NzgwOTk1OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
