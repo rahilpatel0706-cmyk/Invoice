@@ -159,6 +159,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 .fclr{margin-left:auto;padding:7px 13px;background:#fdecea;color:var(--red);border:none;
   border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
 .fclr:hover{background:#fbb}
+.incohint{margin-top:9px;padding:9px 12px;border-radius:8px;background:#eaf4fb;border:1px solid #c9e3f5;
+  font-size:12px;color:#14618c;line-height:1.45}
+.incohint b{color:#0d4b6e}
 .hfoot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
   padding:11px 16px;background:#f4f6fb;border-top:2px solid var(--border);font-size:13px;color:var(--muted)}
 .hfoot strong{color:var(--navy);font-size:14px}
@@ -581,18 +584,31 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <div class="field"><label>Date of Issue*</label><input type="date" id="pf-date"></div>
       </div>
       <div class="fr">
-        <div class="field"><label>Mode of Shipment</label><input type="text" id="pf-mode" list="shipmode-list" placeholder="e.g. SEA FREIGHT (CIF)" autocomplete="off">
+        <div class="field"><label>Transport Mode</label><input type="text" id="pf-transport" list="shipmode-list" placeholder="e.g. SEA FREIGHT" autocomplete="off" oninput="recalcP()">
           <datalist id="shipmode-list">
-            <option value="SEA FREIGHT (CIF)">
-            <option value="SEA FREIGHT (FOB)">
-            <option value="AIR FREIGHT (CIF)">
-            <option value="AIR FREIGHT / COURIER (DDP)">
-            <option value="EX-WORKS (EXW)">
+            <option value="SEA FREIGHT">
+            <option value="AIR FREIGHT">
+            <option value="AIR COURIER">
+            <option value="ROAD TRANSPORT">
+            <option value="MULTIMODAL">
           </datalist>
         </div>
-        <div class="field"><label>Port of Loading</label><input type="text" id="pf-pol" placeholder="e.g. NHAVA SHEVA PORT, INDIA"></div>
+        <div class="field"><label>Incoterm 2020*</label>
+          <select id="pf-inco-code" onchange="onIncotermChange()">
+            <option value="EXW">EXW — Ex Works (buyer pays everything)</option>
+            <option value="FOB">FOB — Free On Board (buyer pays freight + insurance)</option>
+            <option value="CFR">CFR — Cost &amp; Freight (you pay freight only)</option>
+            <option value="CIF" selected>CIF — Cost, Insurance &amp; Freight (you pay both)</option>
+            <option value="DDP">DDP — Delivered Duty Paid (you pay everything)</option>
+          </select>
+        </div>
       </div>
-      <div class="fr s"><div class="field"><label>Port of Discharge</label><input type="text" id="pf-pod" placeholder="e.g. LAGOS APAPA SEA PORT, NIGERIA"></div></div>
+      <div class="fr">
+        <div class="field"><label>Port of Loading</label><input type="text" id="pf-pol" placeholder="e.g. NHAVA SHEVA PORT, INDIA"></div>
+        <div class="field"><label>Port of Discharge</label><input type="text" id="pf-pod2" placeholder="e.g. LAGOS APAPA SEA PORT, NIGERIA" oninput="document.getElementById('pf-pod').value=this.value"></div>
+      </div>
+      <div class="incohint" id="pf-incohint"></div>
+      <input type="hidden" id="pf-pod">
     </div>
 
     <div class="card">
@@ -622,18 +638,24 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
         <div>
           <div class="fr">
-            <div class="field"><label>Consolidated Freight ($)</label><input type="number" id="pf-freight" value="0" min="0" oninput="recalcP()"></div>
-            <div class="field"><label>Marine Insurance ($)</label><input type="number" id="pf-ins" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field"><label>Export Packing / Handling ($)</label><input type="number" id="pf-pack" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field" id="pf-freight-wrap"><label>Consolidated Freight ($)</label><input type="number" id="pf-freight" value="0" min="0" oninput="recalcP()"></div>
+          </div>
+          <div class="fr">
+            <div class="field" id="pf-ins-wrap"><label>Marine Insurance ($)</label><input type="number" id="pf-ins" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field" id="pf-duty-wrap" style="display:none"><label>Duties &amp; Customs ($)</label><input type="number" id="pf-duty" value="0" min="0" oninput="recalcP()"></div>
           </div>
           <div class="fr s"><div class="field"><label>Payment Mandate Clause</label><textarea id="pf-pay" style="min-height:52px"></textarea></div></div>
           <div class="fr s"><div class="field"><label>Incoterms Delivery Clause</label><textarea id="pf-inco" style="min-height:52px"></textarea></div></div>
           <div class="fr s"><div class="field"><label>Commercial Guarantee Clause</label><textarea id="pf-guar" style="min-height:52px"></textarea></div></div>
         </div>
         <div class="tgrid">
-          <div class="trow"><span class="tlabel">Total Product Value (FOB)</span><span class="tval" id="pft-fob">$0.00</span></div>
-          <div class="trow"><span class="tlabel">Consolidated Freight</span><span class="tval" id="pft-freight">$0.00</span></div>
-          <div class="trow"><span class="tlabel">Marine Insurance</span><span class="tval" id="pft-ins">$0.00</span></div>
-          <div class="trow grand"><span class="tlabel">Total CIF Payable (USD)</span><span class="tval" id="pft-cif">$0.00</span></div>
+          <div class="trow"><span class="tlabel">Total Product Value</span><span class="tval" id="pft-fob">$0.00</span></div>
+          <div class="trow" id="pft-pack-row"><span class="tlabel">Export Packing / Handling</span><span class="tval" id="pft-pack">$0.00</span></div>
+          <div class="trow" id="pft-freight-row"><span class="tlabel">Consolidated Freight</span><span class="tval" id="pft-freight">$0.00</span></div>
+          <div class="trow" id="pft-ins-row"><span class="tlabel">Marine Insurance</span><span class="tval" id="pft-ins">$0.00</span></div>
+          <div class="trow" id="pft-duty-row" style="display:none"><span class="tlabel">Duties &amp; Customs</span><span class="tval" id="pft-duty">$0.00</span></div>
+          <div class="trow grand"><span class="tlabel" id="pft-grand-label">Total CIF Payable (USD)</span><span class="tval" id="pft-cif">$0.00</span></div>
           <div class="trow" style="margin-top:6px;background:#eef0f6;border-radius:6px">
             <span class="tlabel" style="font-size:11px">Amount in Words</span>
           </div>
@@ -675,7 +697,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <thead>
           <tr>
             <th>PI No</th><th>Date</th><th>Buyer</th>
-            <th>Mode</th><th>Port of Discharge</th><th>Total CIF ($)</th><th>Actions</th>
+            <th>Mode</th><th>Port of Discharge</th><th>Total ($)</th><th>Actions</th>
           </tr>
         </thead>
         <tbody id="phbody">
@@ -1063,7 +1085,7 @@ async function loadHist() {
       clientName:r.customer_name||"", clientMobile:r.customer_mobile||"", clientLocation:r.customer_location||"",
       clientGstin:r.customer_gstin||"", clientAddress:r.client_address||"", transport:r.transport||"", destination:r.destination||"",
       parcels:r.total_parcels||1, challan:r.challan_no||"", po:r.buyer_po_no||"", gstType:r.gst_type||"cgst_sgst",
-      products:(r.products||[]).map(p=>({desc:p.description||"",hsn:p.hsn||"",qty:p.quantity||"",rate:p.rate||"",amt:parseFloat(p.amount)||0})),
+      products:(r.products||[]).map(p=>({desc:p.description||"",hsn:p.hsn||"",qty:p.quantity||"",rate:p.rate||"",gst:(p.gst_rate!==undefined&&p.gst_rate!==null&&p.gst_rate!=="")?p.gst_rate:(p.gst!==undefined?p.gst:undefined),amt:parseFloat(p.amount)||0})),
       taxable:parseFloat(r.taxable_amount)||0, packing:parseFloat(r.packing_charges)||0,
       cgst:parseFloat(r.cgst)||0, sgst:parseFloat(r.sgst)||0, igst:parseFloat(r.igst)||0,
       grand:parseFloat(r.grand_total)||0, taxWords:r.tax_words||"", notes:r.notes||""
@@ -2084,7 +2106,7 @@ async function loadQHist() {
       gstType:r.gst_type||"cgst_sgst", subtotal:parseFloat(r.subtotal)||0, pfType:r.pf_type||"included",
       pfAmt:parseFloat(r.pf_amount)||0, cgst:parseFloat(r.cgst)||0, sgst:parseFloat(r.sgst)||0,
       igst:parseFloat(r.igst)||0, grand:parseFloat(r.grand_total)||0, amtWords:r.amount_words||"", terms:r.terms||"",
-      products:(r.products||[]).map(x=>({hsn:x.hsn||"",desc:x.description||"",make:x.make||"",rate:x.unit_rate||"",qty:x.quantity||"",amt:parseFloat(x.amount)||0}))
+      products:(r.products||[]).map(x=>({hsn:x.hsn||"",desc:x.description||"",make:x.make||"",rate:x.unit_rate||"",qty:x.quantity||"",gst:(x.gst_rate!==undefined&&x.gst_rate!==null&&x.gst_rate!=="")?x.gst_rate:(x.gst!==undefined?x.gst:undefined),amt:parseFloat(x.amount)||0}))
     }));
     ssSet("je_quot",allQHist); renderQHist(allQHist); buildQProductDirectory(allQHist);
     if(!qEditingOriginalNo) suggestNo("q-no",allQHist,"quotNo");
@@ -2533,9 +2555,58 @@ const COX = {
   bankAd:"6360424"
 };
 // Default clause texts (editable in the form every time)
+// ═══════════════════════════════════════════════════
+// INCOTERMS 2020 ENGINE
+// The Incoterm decides WHO pays for what. Everything on the
+// proforma — the total's name, which cost lines appear, and the
+// delivery clause — is derived from this table, so an EXW quote
+// can never print "Total CIF Payable" again.
+// ═══════════════════════════════════════════════════
+const INCOTERMS = {
+  EXW: { code:"EXW", name:"Ex Works",
+         freight:false, ins:false, duty:false, total:"Ex-Works Value",
+         seaOnly:false,
+         clause:"Price is Ex-Works our Ahmedabad facility. Collection, inland haulage, export clearance, main carriage, insurance, destination charges, import clearance and all duties/taxes are to the buyer's account." },
+  FOB: { code:"FOB", name:"Free On Board",
+         freight:false, ins:false, duty:false, total:"Total FOB Value",
+         seaOnly:true,
+         clause:"Price is FOB the named port of loading. Goods are delivered on board the vessel; ocean freight, marine insurance, destination charges, import clearance and all duties/taxes are to the buyer's account." },
+  CFR: { code:"CFR", name:"Cost and Freight",
+         freight:true, ins:false, duty:false, total:"Total CFR Payable Value",
+         seaOnly:true,
+         clause:"Price is CFR the named port of discharge and includes ocean freight. Marine insurance is NOT included and is to be arranged by the buyer. Destination terminal handling, import clearance and all duties/taxes are to the buyer's account." },
+  CIF: { code:"CIF", name:"Cost, Insurance and Freight",
+         freight:true, ins:true, duty:false, total:"Total CIF Payable Value",
+         seaOnly:true,
+         clause:"Price is CIF the named port of discharge and includes ocean freight and marine cargo insurance. Destination terminal handling, import clearance and all duties/taxes remain to the buyer's account." },
+  DDP: { code:"DDP", name:"Delivered Duty Paid",
+         freight:true, ins:true, duty:true, total:"Total DDP Delivered Value",
+         seaOnly:false,
+         clause:"Price is DDP the named destination and includes carriage, insurance, import clearance and all duties/taxes. Only unloading at the buyer's premises is to the buyer's account." }
+};
+function incoOf(code){ return INCOTERMS[String(code||"CIF").toUpperCase()] || INCOTERMS.CIF; }
+// Printed shipment line, e.g. "SEA FREIGHT (CIF)"
+function shipModeLabel(transport,code){
+  const t=String(transport||"").trim();
+  const c=incoOf(code).code;
+  return t ? (t+" ("+c+")") : c;
+}
+// Old records stored one free-text field like "SEA FREIGHT (CIF)".
+// Recover the Incoterm from it so historical proformas reprint correctly.
+function incoFromLegacy(mode){
+  const s=String(mode||"").toUpperCase();
+  const order=["DDP","CIF","CFR","FOB","EXW"];
+  for(const k of order){ if(s.indexOf(k)>=0) return k; }
+  return "CIF";
+}
+function transportFromLegacy(mode){
+  let s=String(mode||"").trim();
+  s=s.replace(/\s*\(([A-Z]{3})\)\s*$/,"").trim();
+  return s || "SEA FREIGHT";
+}
 const PROF_TERMS = {
   pay:"100% payment needs to be done in advance via banking telegraphic wire transfer routing prior to packaging release or factory dispatch.",
-  inco:"Priced parameters reflect strict CIF metrics to the specified destination port. Local customs destination clearing, terminal handling fees, and local country taxes/duties remain under the buyer's scope.",
+  inco:INCOTERMS.CIF.clause,
   guar:"Equipment carries a firm 12-month manufacturer performance warranty against engineering or manufacturing defects."
 };
 
@@ -2584,7 +2655,8 @@ let allPHist=[];
 
 function profDefaults(){
   document.getElementById("pf-pol").value="NHAVA SHEVA PORT, INDIA";
-  document.getElementById("pf-mode").value="SEA FREIGHT (CIF)";
+  document.getElementById("pf-transport").value="SEA FREIGHT";
+  document.getElementById("pf-inco-code").value="CIF";
   document.getElementById("pf-pay").value=PROF_TERMS.pay;
   document.getElementById("pf-inco").value=PROF_TERMS.inco;
   document.getElementById("pf-guar").value=PROF_TERMS.guar;
@@ -2657,16 +2729,47 @@ function autofillPProduct(n){
 
 function recalcP(){
   const rows=getPRows();
+  const code=document.getElementById("pf-inco-code")?.value||"CIF";
+  const T=incoOf(code);
   const fob=rows.reduce((s,r)=>s+r.amt,0);
-  const freight=parseFloat(document.getElementById("pf-freight")?.value)||0;
-  const ins=parseFloat(document.getElementById("pf-ins")?.value)||0;
-  const cif=fob+freight+ins;
+  const pack=parseFloat(document.getElementById("pf-pack")?.value)||0;
+  // A charge only counts when the Incoterm makes it the seller's cost.
+  const freight=T.freight?(parseFloat(document.getElementById("pf-freight")?.value)||0):0;
+  const ins    =T.ins    ?(parseFloat(document.getElementById("pf-ins")?.value)||0):0;
+  const duty   =T.duty   ?(parseFloat(document.getElementById("pf-duty")?.value)||0):0;
+  const cif=fob+pack+freight+ins+duty;
+  const show=(id,on)=>{const e=document.getElementById(id); if(e) e.style.display=on?"":"none";};
+  show("pf-freight-wrap",T.freight); show("pf-ins-wrap",T.ins); show("pf-duty-wrap",T.duty);
+  show("pft-pack-row",pack>0); show("pft-freight-row",T.freight);
+  show("pft-ins-row",T.ins);   show("pft-duty-row",T.duty);
+  const gl=document.getElementById("pft-grand-label");
+  if(gl) gl.textContent=T.total+" (USD)";
   document.getElementById("pft-fob").textContent=usd(fob);
+  const pe=document.getElementById("pft-pack"); if(pe) pe.textContent=usd(pack);
   document.getElementById("pft-freight").textContent=usd(freight);
   document.getElementById("pft-ins").textContent=usd(ins);
+  const de=document.getElementById("pft-duty"); if(de) de.textContent=usd(duty);
   document.getElementById("pft-cif").textContent=usd(cif);
   document.getElementById("pft-words").textContent=usdToWords(cif);
-  return{fob,freight,ins,cif,amtWords:usdToWords(cif)};
+  const hint=document.getElementById("pf-incohint");
+  if(hint){
+    const inc=[]; if(T.freight)inc.push("freight"); if(T.ins)inc.push("insurance"); if(T.duty)inc.push("import duties");
+    hint.innerHTML="<b>"+T.code+" \u2014 "+T.name+".</b> Price includes "+
+      (inc.length?inc.join(" + "):"goods only")+". "+
+      (T.seaOnly?"Sea / inland waterway shipments only.":"Valid for any transport mode.");
+  }
+  return{fob,pack,freight,ins,duty,cif,incoCode:T.code,amtWords:usdToWords(cif)};
+}
+// Switching the Incoterm re-writes the delivery clause, unless the
+// user has typed their own wording over it.
+function onIncotermChange(){
+  const code=document.getElementById("pf-inco-code")?.value||"CIF";
+  const box=document.getElementById("pf-inco");
+  if(box){
+    const known=Object.keys(INCOTERMS).some(k=>INCOTERMS[k].clause===box.value.trim());
+    if(!box.value.trim()||known) box.value=incoOf(code).clause;
+  }
+  recalcP();
 }
 
 function collectP(){
@@ -2684,7 +2787,10 @@ function collectP(){
     bphone:   document.getElementById("pf-bphone").value.trim(),
     bemail:   document.getElementById("pf-bemail").value.trim(),
     btax:     document.getElementById("pf-btax").value.trim(),
-    mode:     document.getElementById("pf-mode").value.trim(),
+    transport: document.getElementById("pf-transport").value.trim(),
+    incoCode:  document.getElementById("pf-inco-code").value,
+    mode:     shipModeLabel(document.getElementById("pf-transport").value.trim(),
+                            document.getElementById("pf-inco-code").value),
     pol:      document.getElementById("pf-pol").value.trim(),
     pod:      document.getElementById("pf-pod").value.trim(),
     productsStr,
@@ -2705,11 +2811,13 @@ function validateP(d){
 
 function clearPForm(skipConfirm){
   if(!skipConfirm && !confirm("Clear all proforma fields?")) return;
-  ["pf-no","pf-bname","pf-baddr","pf-bphone","pf-bemail","pf-btax","pf-pod"].forEach(id=>{
+  ["pf-no","pf-bname","pf-baddr","pf-bphone","pf-bemail","pf-btax","pf-pod","pf-pod2"].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value="";
   });
   document.getElementById("pf-freight").value="0";
   document.getElementById("pf-ins").value="0";
+  const _pk=document.getElementById("pf-pack"); if(_pk)_pk.value="0";
+  const _dt=document.getElementById("pf-duty"); if(_dt)_dt.value="0";
   document.getElementById("pf-date").value=todayLocal();
   profDefaults();
   document.getElementById("pf-prows").innerHTML="";
@@ -2759,6 +2867,8 @@ async function loadPHist(){
       bname:r.buyer_name||"", baddr:r.buyer_address||"", bphone:r.buyer_phone||"", bemail:r.buyer_email||"", btax:r.buyer_tax_id||"",
       mode:r.shipment_mode||"", pol:r.port_of_loading||"", pod:r.port_of_discharge||"",
       fob:parseFloat(r.fob_total)||0, freight:parseFloat(r.freight)||0, ins:parseFloat(r.insurance)||0, cif:parseFloat(r.cif_total)||0,
+      pack:parseFloat(r.packing)||0, duty:parseFloat(r.duties)||0,
+      transport:r.transport||"", incoCode:r.incoterm||"",
       amtWords:r.amount_words||"", pay:r.payment_clause||"", inco:r.incoterms_clause||"", guar:r.guarantee_clause||"",
       products:(r.products||[]).map(x=>({hsn:x.hsn||"",desc:x.description||"",note:x.details||"",rate:x.unit_price||"",qty:x.quantity||"",amt:parseFloat(x.amount)||0}))
     }));
@@ -2855,11 +2965,16 @@ function editProf(no){
   document.getElementById("pf-bphone").value=p.bphone||"";
   document.getElementById("pf-bemail").value=p.bemail||"";
   document.getElementById("pf-btax").value=p.btax||"";
-  document.getElementById("pf-mode").value=p.mode||"SEA FREIGHT (CIF)";
+  // Records saved before the Incoterm split carry only a free-text mode.
+  document.getElementById("pf-transport").value=p.transport||transportFromLegacy(p.mode);
+  document.getElementById("pf-inco-code").value=p.incoCode||incoFromLegacy(p.mode);
   document.getElementById("pf-pol").value=p.pol||"";
   document.getElementById("pf-pod").value=p.pod||"";
+  const _pod2=document.getElementById("pf-pod2"); if(_pod2)_pod2.value=p.pod||"";
   document.getElementById("pf-freight").value=p.freight||0;
   document.getElementById("pf-ins").value=p.ins||0;
+  const _pk2=document.getElementById("pf-pack"); if(_pk2)_pk2.value=p.pack||0;
+  const _dt2=document.getElementById("pf-duty"); if(_dt2)_dt2.value=p.duty||0;
   document.getElementById("pf-pay").value=p.pay||PROF_TERMS.pay;
   document.getElementById("pf-inco").value=p.inco||PROF_TERMS.inco;
   document.getElementById("pf-guar").value=p.guar||PROF_TERMS.guar;
@@ -2910,30 +3025,46 @@ function openPWhatsApp(d){
     `PI No: ${d.profNo||""}\n`+
     `Date: ${fmtDateExport(d.date)}\n`+
     (d.pod?`Port of Discharge: ${d.pod}\n`:"")+
-    `Total CIF Payable: ${usd(d.cif)} (USD)\n\n`+
+    `${incoOf(d.incoCode||incoFromLegacy(d.mode)).total}: ${usd(d.cif)} (USD)\n\n`+
     `Bank wire details are on the document — we'll share the PDF right after this message.\n\n`+
     `Thank you!\n${CO.name}\n${COX.phone}`
   );
   window.open(`https://wa.me/${phone}?text=${msg}`,"_blank");
 }
 function exportProfExcel(){
-  const q=(document.getElementById("phsearch").value||"").toLowerCase();
-  const list=allPHist.filter(i=>
-    (i.profNo||"").toLowerCase().includes(q)||
-    (i.bname||"").toLowerCase().includes(q)||
-    (i.pod||"").toLowerCase().includes(q));
+  const list=filteredProf();
   exportToXlsx(list.map(d=>({
     "Proforma No":d.profNo,"Date":fmtDateExport(d.date),"Buyer":d.bname,
     "Phone":d.bphone,"Email":d.bemail,"Tax ID / VAT":d.btax,
+    "Transport":d.transport||transportFromLegacy(d.mode),
+    "Incoterm":d.incoCode||incoFromLegacy(d.mode),
     "Shipment Mode":d.mode,"Port of Loading":d.pol,"Port of Discharge":d.pod,
-    "FOB ($)":(+d.fob||0).toFixed(2),"Freight ($)":(+d.freight||0).toFixed(2),
-    "Insurance ($)":(+d.ins||0).toFixed(2),"CIF Total ($)":(+d.cif||0).toFixed(2),
+    "Goods Value ($)":(+d.fob||0).toFixed(2),"Packing ($)":(+d.pack||0).toFixed(2),
+    "Freight ($)":(+d.freight||0).toFixed(2),
+    "Insurance ($)":(+d.ins||0).toFixed(2),"Duties ($)":(+d.duty||0).toFixed(2),
+    "Total Payable ($)":(+d.cif||0).toFixed(2),
+    "Total Basis":incoOf(d.incoCode||incoFromLegacy(d.mode)).total,
     "Amount in Words":d.amtWords
   })),"Proformas","jigar-proformas-"+todayLocal()+".xlsx");
 }
 
 // ── Print layout (mirrors the exported proforma document design) ──
 function buildProfHTML(d){
+  const T=incoOf(d.incoCode||incoFromLegacy(d.mode));
+  const modeLine=d.mode||shipModeLabel(d.transport,T.code);
+  const pack=parseFloat(d.pack)||0;
+  const freight=T.freight?(parseFloat(d.freight)||0):0;
+  const insv   =T.ins    ?(parseFloat(d.ins)||0):0;
+  const duty   =T.duty   ?(parseFloat(d.duty)||0):0;
+  const goodsLabel=(T.code==="EXW"||T.code==="DDP")?"Total Product Value":"Total Product Value (FOB India)";
+  const costRows=
+    (pack>0   ?`<div class="srow"><span>Export Packing &amp; Handling</span><b>${usd(pack)}</b></div>`:"")+
+    (T.freight?`<div class="srow"><span>Consolidated Freight Charges</span><b>${usd(freight)}</b></div>`:"")+
+    (T.ins    ?`<div class="srow"><span>Marine Cargo Insurance Value</span><b>${usd(insv)}</b></div>`:"")+
+    (T.duty   ?`<div class="srow"><span>Import Duties &amp; Customs</span><b>${usd(duty)}</b></div>`:"");
+  const exclNote=(!T.freight||!T.ins)?`<div class="excl">Excludes: ${
+    [!T.freight?"main carriage / freight":"",!T.ins?"cargo insurance":"",!T.duty?"import duties &amp; taxes":""]
+      .filter(Boolean).join(", ")} \u2014 buyer's account.</div>`:"";
   const prods=(d.products||[]).map((it,i)=>`
     <tr>
       <td class="c-item">${i+1}</td>
@@ -2950,7 +3081,7 @@ function buildProfHTML(d){
   <title>Proforma Invoice ${esc(d.profNo)}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#1c1c1c;background:#fff;font-size:10.2px;line-height:1.32;padding:14px 30px}
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#1c1c1c;background:#fff;font-size:11px;line-height:1.45;padding:20px 34px}
     .hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
     .badge{display:inline-block;background:#1899d3;color:#fff;font-weight:700;letter-spacing:1.3px;
       font-size:11.5px;padding:6px 14px;border-radius:4px;margin-top:2px;white-space:nowrap}
@@ -2961,51 +3092,53 @@ function buildProfHTML(d){
     .co .iec{font-weight:700;color:#000;margin-top:2px}
     .tag{font-style:italic;color:#6a7383;font-size:9.6px;margin-top:2px;max-width:520px;margin-left:auto}
     .divider{border-top:2px solid #1c1c1c;margin:4px 0 7px}
-    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:7px}
-    .box{background:#f3f6fa;border:1px solid #e3e9f2;border-radius:8px;padding:6px 11px}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:11px;align-items:stretch}
+    .box{background:#f3f6fa;border:1px solid #e3e9f2;border-radius:8px;padding:10px 13px}
     .bh{color:#1899d3;font-size:9.4px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
       border-bottom:1px solid #dbe3ee;padding-bottom:4px;margin-bottom:5px}
     .buyer-name{font-size:12.3px;font-weight:800;color:#111;margin-bottom:2px}
     .buyer-line{font-size:10.6px;color:#222;margin:1px 0}
     .buyer-email{font-size:10.2px;color:#1899d3;font-weight:600;margin:1px 0}
     .buyer-tax{font-size:9.7px;color:#6a7383;margin-top:4px}
-    .mr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:3px 0;font-size:10.4px}
+    .mr{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:4.5px 0;font-size:10.9px}
     .ml{color:#444;font-weight:600;white-space:nowrap}
     .mv{text-align:right;font-weight:600}
     .mv.em{font-weight:800;color:#000;text-transform:uppercase}
     table.items{width:100%;border-collapse:collapse;margin:2px 0 6px}
-    .items th{background:#1c1c1c;color:#fff;text-align:left;padding:6px 8px;font-size:9.2px;font-weight:700;
-      letter-spacing:.4px;text-transform:uppercase}
-    .items td{padding:4.5px 8px;border-bottom:1px solid #e3e6ec;vertical-align:top;font-size:10.2px}
+    .items th{background:#1c1c1c;color:#fff;text-align:left;padding:8px 9px;font-size:9.6px;font-weight:700;
+      letter-spacing:.5px;text-transform:uppercase}
+    .items td{padding:7px 9px;border-bottom:1px solid #e3e6ec;vertical-align:top;font-size:10.9px}
     .c-item{width:6%}.c-hsn{width:11%}.c-desc{width:45%}.c-rate{width:12%;text-align:right}
     .c-qty{width:9%;text-align:center}.c-amt{width:17%;text-align:right;font-weight:800;color:#111}
     th.c-rate,th.c-amt{text-align:right;white-space:nowrap}th.c-qty{text-align:center}
     .p-title{font-weight:800;color:#111}
     .p-note{color:#7c8699;font-size:9.5px;margin-top:2px;line-height:1.3;max-width:430px}
     .qty-sub{color:#555;font-size:9.7px;margin-top:2px}
-    .bottom{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;margin-bottom:6px;page-break-inside:avoid}
-    .clause{margin:4px 0;font-size:9.5px;color:#333;line-height:1.32}
+    .bottom{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-bottom:11px;page-break-inside:avoid}
+    .clause{margin:7px 0;font-size:10px;color:#333;line-height:1.45}
     .clause b{color:#000;text-transform:uppercase}
     .clause::before{content:"*";color:#1899d3;font-weight:800;font-size:15px;margin-right:6px;vertical-align:-1px}
-    .sum .srow{display:flex;justify-content:space-between;padding:4.5px 2px;font-size:10.6px;color:#333;white-space:nowrap}
+    .sum .srow{display:flex;justify-content:space-between;gap:14px;padding:6px 2px;font-size:11px;color:#333;
+      border-bottom:1px dotted #d9e0ea}
+    .excl{margin-top:7px;font-size:9.3px;color:#7c8699;font-style:italic;line-height:1.4}
     .sum .srow b{color:#111}
     .cifbar{display:flex;justify-content:space-between;align-items:center;gap:14px;background:#1899d3;color:#fff;
-      font-weight:800;font-size:12px;padding:7px 12px;border-radius:5px;margin-top:5px;white-space:nowrap}
-    .bank{background:#eaf7ee;border:1px solid #cde8d5;border-radius:8px;padding:7px 11px;margin-bottom:7px;
+      font-weight:800;font-size:12.5px;padding:10px 13px;border-radius:6px;margin-top:9px}
+    .bank{background:#eaf7ee;border:1px solid #cde8d5;border-radius:8px;padding:10px 13px;margin-bottom:10px;
       page-break-inside:avoid}
     .bank h4{color:#1e6b3a;font-size:9.4px;letter-spacing:.7px;text-transform:uppercase;font-weight:800;
       border-bottom:1px solid #cde8d5;padding-bottom:4px;margin-bottom:5px}
-    .bank .br{display:grid;grid-template-columns:130px 1fr;padding:1px 0;font-size:10.3px}
+    .bank .br{display:grid;grid-template-columns:150px 1fr;padding:2.5px 0;font-size:10.7px}
     .bank .bl{font-weight:700;color:#111}
     .bank .bv{color:#1c1c1c;letter-spacing:.3px}
-    .wordsbar{background:#e9edf5;border-radius:5px;padding:5px 12px;font-size:9.8px;color:#222;margin-bottom:6px;text-transform:uppercase}
+    .wordsbar{background:#e9edf5;border-radius:6px;padding:8px 13px;font-size:10.3px;color:#222;margin-bottom:9px;text-transform:uppercase;letter-spacing:.2px}
     .notif{text-align:center;color:#777;font-size:9.4px;font-weight:600;letter-spacing:.3px;margin:4px 0 2px}
     .sign{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:12px;page-break-inside:avoid}
     .sign .sc{text-align:center}
     .sign .line{border-top:1.5px solid #1c1c1c;padding-top:5px;font-weight:700;font-size:11px}
     .sign .cap{font-size:10px;color:#666;margin-top:2px}
     @media print{
-      body{padding:12px 26px;zoom:.87}
+      body{padding:14px 28px;zoom:.9}
       .sign{margin-top:30px}
       @page{margin:9mm}
     }
@@ -3036,7 +3169,8 @@ function buildProfHTML(d){
       <div class="bh">Filing &amp; Logistics Control</div>
       <div class="mr"><span class="ml">Proforma Invoice No:</span><span class="mv em">${esc(d.profNo)||""}</span></div>
       <div class="mr"><span class="ml">Date of Issue:</span><span class="mv">${esc(fmtDateExport(d.date))}</span></div>
-      <div class="mr"><span class="ml">Mode of Shipment:</span><span class="mv em">${esc(d.mode)||""}</span></div>
+      <div class="mr"><span class="ml">Mode of Shipment:</span><span class="mv em">${esc(modeLine)}</span></div>
+      <div class="mr"><span class="ml">Incoterm 2020:</span><span class="mv em">${esc(T.code)} &mdash; ${esc(T.name)}</span></div>
       <div class="mr"><span class="ml">Port of Loading:</span><span class="mv em">${esc(d.pol)||""}</span></div>
       <div class="mr"><span class="ml">Port of Discharge:</span><span class="mv em">${esc(d.pod)||""}</span></div>
     </div>
@@ -3045,7 +3179,7 @@ function buildProfHTML(d){
     <thead><tr>
       <th class="c-item">Item</th><th class="c-hsn">Export HSN</th>
       <th class="c-desc">Description of Industrial Mechanical Equipment</th>
-      <th class="c-rate">Unit Price ($)</th><th class="c-qty">Qty</th><th class="c-amt">Total FOB ($)</th>
+      <th class="c-rate">Unit Price ($)</th><th class="c-qty">Qty</th><th class="c-amt">Amount ($)</th>
     </tr></thead>
     <tbody>${prods}</tbody>
   </table>
@@ -3053,14 +3187,14 @@ function buildProfHTML(d){
     <div class="box">
       <div class="bh">International Supply Clauses &amp; Delivery Framework</div>
       <div class="clause"><b>Payment Mandate:</b><br>${escBr(d.pay)||""}</div>
-      <div class="clause"><b>Incoterms Delivery:</b><br>${escBr(d.inco)||""}</div>
+      <div class="clause"><b>Incoterms Delivery (${esc(T.code)}):</b><br>${escBr(d.inco)||esc(T.clause)}</div>
       <div class="clause"><b>Commercial Guarantee:</b><br>${escBr(d.guar)||""}</div>
     </div>
     <div class="sum">
-      <div class="srow"><span>Total Product Value (FOB India)</span><b>${usd(d.fob)}</b></div>
-      <div class="srow"><span>Consolidated Freight Charges</span><b>${usd(d.freight)}</b></div>
-      <div class="srow"><span>Marine Cargo Insurance Value</span><b>${usd(d.ins)}</b></div>
-      <div class="cifbar"><span>Total CIF Payable Value (USD)</span><span>${usd(d.cif)}</span></div>
+      <div class="srow"><span>${goodsLabel}</span><b>${usd(d.fob)}</b></div>
+      ${costRows}
+      <div class="cifbar"><span>${esc(T.total)} (USD)</span><span>${usd(d.cif)}</span></div>
+      ${exclNote}
     </div>
   </div>
   <div class="bank">
@@ -3083,4 +3217,4 @@ function buildProfHTML(d){
   </body></html>`;
 }
 </script>
-<script>try{if(typeof LOGO!=="undefined"){document.querySelectorAll("img[data-logo]").forEach(function(im){im.src=LOGO;});}}catch(e){}</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a394e78ccc3649a6',t:'MTc4OTExMTE3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
+<script>try{if(typeof LOGO!=="undefined"){document.querySelectorAll("img[data-logo]").forEach(function(im){im.src=LOGO;});}}catch(e){}</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3952299be813cbe',t:'MTc4OTExMzU4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
