@@ -82,12 +82,12 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 .field textarea{resize:vertical;min-height:58px}
 
 /* PRODUCT TABLE */
-.ph{display:grid;grid-template-columns:28px 3fr 1fr 80px 100px 110px 32px;
+.ph{display:grid;grid-template-columns:28px 3fr 1fr 66px 92px 74px 100px 32px;
   gap:7px;align-items:center;padding:8px 10px;background:var(--navy);border-radius:7px 7px 0 0}
 .ph span{font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.5px}
 .ph span.r{text-align:right}
 .prows{border:1.5px solid var(--border);border-top:none;border-radius:0 0 7px 7px;overflow:hidden}
-.prow{display:grid;grid-template-columns:28px 3fr 1fr 80px 100px 110px 32px;
+.prow{display:grid;grid-template-columns:28px 3fr 1fr 66px 92px 74px 100px 32px;
   gap:7px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border);background:#fff}
 .prow:last-child{border-bottom:none}
 .prow:hover{background:#fafbff}
@@ -96,6 +96,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
   font-size:12px;background:var(--ibg);outline:none;transition:border-color .15s;font-family:inherit}
 .prow input:focus{border-color:var(--orange);background:#fff}
 .prow input.r{text-align:right}
+.prow select{width:100%;padding:6px 3px;border:1.5px solid var(--border);border-radius:5px;
+  font-size:11.5px;background:var(--ibg);outline:none;font-family:inherit;cursor:pointer}
+.prow select:focus{border-color:var(--orange);background:#fff}
 .prow input[readonly]{background:#eef0f6;color:var(--muted);cursor:default}
 .rmbtn{width:26px;height:26px;background:#fdecea;color:var(--red);border:none;
   border-radius:5px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
@@ -144,6 +147,24 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 .hsearch{padding:8px 13px;border:1.5px solid var(--border);border-radius:8px;
   font-size:13px;width:230px;outline:none;background:#fff}
 .hsearch:focus{border-color:var(--orange)}
+.hfilters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;
+  background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 13px;box-shadow:var(--sh)}
+.hfilters label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.hfilters input,.hfilters select{padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:12.5px;outline:none;background:#fff;font-family:inherit;color:var(--navy);font-weight:600}
+.hfilters input:focus,.hfilters select:focus{border-color:var(--orange)}
+.hfilters input[type=number]{width:92px}
+.hfilters input[type=date]{width:142px}
+.fclr{margin-left:auto;padding:7px 13px;background:#fdecea;color:var(--red);border:none;
+  border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+.fclr:hover{background:#fbb}
+.hfoot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:11px 16px;background:#f4f6fb;border-top:2px solid var(--border);font-size:13px;color:var(--muted)}
+.hfoot strong{color:var(--navy);font-size:14px}
+.trow.sub{padding-top:2px;padding-bottom:2px}
+.trow.sub .tlabel{font-size:11px;color:var(--muted);padding-left:12px}
+.trow.sub .tval{font-size:11.5px;color:var(--muted)}
 .htw{background:#fff;border-radius:12px;box-shadow:var(--sh);border:1px solid var(--border);overflow:hidden}
 .htable{width:100%;border-collapse:collapse}
 .htable th{background:var(--navy);color:rgba(255,255,255,.85);padding:11px 14px;
@@ -203,7 +224,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
   /* totals blocks use an inline 2-col grid — collapse it on mobile */
   div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
   /* product rows keep their full grid; card scrolls sideways */
-  .ph,.prow{min-width:700px}
+  .ph,.prow{min-width:820px}
   .prows{overflow:visible!important;border-left:none;border-right:none;border-radius:0}
   .prow{border-left:1.5px solid var(--border);border-right:1.5px solid var(--border)}
   .prow:last-child{border-radius:0 0 7px 7px}
@@ -320,7 +341,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <div class="ctitle"><span>📦</span> Products / Items</div>
         <div class="ph">
           <span>#</span><span>Description of Goods</span><span>HSN Code</span>
-          <span class="r">Qty</span><span class="r">Rate (₹)</span><span class="r">Amount (₹)</span><span></span>
+          <span class="r">Qty</span><span class="r">Rate (₹)</span><span class="r">GST %</span><span class="r">Amount (₹)</span><span></span>
         </div>
         <div class="prows" id="prows"></div>
         <datalist id="product-list"></datalist>
@@ -348,9 +369,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
           <div class="tgrid">
             <div class="trow"><span class="tlabel">Taxable Amount</span><span class="tval" id="t-tax">₹0.00</span></div>
             <div class="trow"><span class="tlabel">Packing Charges</span><span class="tval" id="t-pack">₹0.00</span></div>
-            <div class="trow" id="r-cgst"><span class="tlabel">CGST (9%)</span><span class="tval" id="t-cgst">₹0.00</span></div>
-            <div class="trow" id="r-sgst"><span class="tlabel">SGST (9%)</span><span class="tval" id="t-sgst">₹0.00</span></div>
-            <div class="trow" id="r-igst" style="display:none"><span class="tlabel">IGST (18%)</span><span class="tval" id="t-igst">₹0.00</span></div>
+            <div id="t-taxrows"></div>
+            <div class="trow" id="r-round" style="display:none"><span class="tlabel">Round Off</span><span class="tval" id="t-round">₹0.00</span></div>
             <div class="trow grand"><span class="tlabel">Grand Total</span><span class="tval" id="t-grand">₹0.00</span></div>
           </div>
         </div>
@@ -376,6 +396,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
           <input class="hsearch" id="hsearch" placeholder="Search invoice no or customer..." oninput="filterHist()">
         </div>
       </div>
+      <div class="hfilters">
+        <label>FY <select id="h-fy" onchange="filterHist()"><option value="">All FY</option></select></label>
+        <label>From <input type="date" id="h-from" onchange="filterHist()"></label>
+        <label>To <input type="date" id="h-to" onchange="filterHist()"></label>
+        <label>Min ₹ <input type="number" id="h-min" min="0" placeholder="0" oninput="filterHist()"></label>
+        <label>Max ₹ <input type="number" id="h-max" min="0" placeholder="Any" oninput="filterHist()"></label>
+        <button class="fclr" onclick="clearHFilters()">✕ Clear</button>
+      </div>
       <div class="htw">
         <table class="htable">
           <thead>
@@ -388,6 +416,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
             <tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No invoices yet.</p></div></td></tr>
           </tbody>
         </table>
+        <div class="hfoot" id="hfoot"></div>
       </div>
     </div>
   </div>
@@ -437,9 +466,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
     <!-- QUOTATION PRODUCTS -->
     <div class="card fw2">
       <div class="ctitle"><span>📦</span> Products / Line Items</div>
-      <div class="ph" style="grid-template-columns:28px 1fr 1.8fr 1fr 90px 80px 110px 32px">
+      <div class="ph" style="grid-template-columns:28px 0.9fr 1.6fr 0.9fr 84px 62px 72px 96px 32px">
         <span>#</span><span>HSN</span><span>Description</span><span>Make/Brand</span>
-        <span class="r">Unit Rate</span><span class="r">Qty</span><span class="r">Amount (₹)</span><span></span>
+        <span class="r">Unit Rate</span><span class="r">Qty</span><span class="r">GST %</span><span class="r">Amount (₹)</span><span></span>
       </div>
       <div class="prows" id="q-prows" style="border:1.5px solid var(--border);border-top:none;border-radius:0 0 7px 7px;overflow:hidden"></div>
       <button class="addbtn" onclick="addQRow()">+ Add Another Product</button>
@@ -480,9 +509,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <div class="tgrid">
           <div class="trow"><span class="tlabel">Subtotal</span><span class="tval" id="qt-sub">₹0.00</span></div>
           <div class="trow"><span class="tlabel">Packing &amp; Forwarding</span><span class="tval" id="qt-pf">INCLUDED</span></div>
-          <div class="trow" id="qr-cgst"><span class="tlabel">CGST (9%)</span><span class="tval" id="qt-cgst">₹0.00</span></div>
-          <div class="trow" id="qr-sgst"><span class="tlabel">SGST (9%)</span><span class="tval" id="qt-sgst">₹0.00</span></div>
-          <div class="trow" id="qr-igst" style="display:none"><span class="tlabel">IGST (18%)</span><span class="tval" id="qt-igst">₹0.00</span></div>
+          <div id="qt-taxrows"></div>
+          <div class="trow" id="qr-round" style="display:none"><span class="tlabel">Round Off</span><span class="tval" id="qt-round">₹0.00</span></div>
           <div class="trow grand"><span class="tlabel">Net Offer Value</span><span class="tval" id="qt-grand">₹0.00</span></div>
           <div class="trow" style="margin-top:6px;background:#eef0f6;border-radius:6px">
             <span class="tlabel" style="font-size:11px">Amount in Words</span>
@@ -512,6 +540,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <input class="hsearch" id="qhsearch" placeholder="Search quotation no or customer..." oninput="filterQHist()">
       </div>
     </div>
+    <div class="hfilters">
+      <label>FY <select id="q-fy" onchange="filterQHist()"><option value="">All FY</option></select></label>
+      <label>From <input type="date" id="q-from" onchange="filterQHist()"></label>
+      <label>To <input type="date" id="q-to" onchange="filterQHist()"></label>
+      <label>Min ₹ <input type="number" id="q-min" min="0" placeholder="0" oninput="filterQHist()"></label>
+      <label>Max ₹ <input type="number" id="q-max" min="0" placeholder="Any" oninput="filterQHist()"></label>
+      <button class="fclr" onclick="clearQFilters()">✕ Clear</button>
+    </div>
     <div class="htw">
       <table class="htable">
         <thead>
@@ -524,6 +560,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
           <tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No quotations yet.</p></div></td></tr>
         </tbody>
       </table>
+      <div class="hfoot" id="qhfoot"></div>
     </div>
   </div>
 </div>
@@ -625,6 +662,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <input class="hsearch" id="phsearch" placeholder="Search proforma no or buyer..." oninput="filterPHist()">
       </div>
     </div>
+    <div class="hfilters">
+      <label>FY <select id="p-fy" onchange="filterPHist()"><option value="">All FY</option></select></label>
+      <label>From <input type="date" id="p-from" onchange="filterPHist()"></label>
+      <label>To <input type="date" id="p-to" onchange="filterPHist()"></label>
+      <label>Min $ <input type="number" id="p-min" min="0" placeholder="0" oninput="filterPHist()"></label>
+      <label>Max $ <input type="number" id="p-max" min="0" placeholder="Any" oninput="filterPHist()"></label>
+      <button class="fclr" onclick="clearPFilters()">✕ Clear</button>
+    </div>
     <div class="htw">
       <table class="htable">
         <thead>
@@ -637,6 +682,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
           <tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No proformas yet.</p></div></td></tr>
         </tbody>
       </table>
+      <div class="hfoot" id="phfoot"></div>
     </div>
   </div>
 </div>
@@ -837,6 +883,10 @@ function addRow() {
     <input type="text" placeholder="HSN" id="ph-${n}">
     <input type="number" class="r" placeholder="0" id="pq-${n}" min="0" oninput="calcAmt(${n})">
     <input type="number" class="r" placeholder="0.00" id="pr2-${n}" min="0" oninput="calcAmt(${n})">
+    <select id="pg-${n}" onchange="recalc()">
+      <option value="0">0%</option><option value="5">5%</option><option value="12">12%</option>
+      <option value="18" selected>18%</option><option value="28">28%</option>
+    </select>
     <input class="r" id="pa-${n}" readonly placeholder="0.00">
     <button class="rmbtn" onclick="remRow(${n})" title="Remove">−</button>`;
   document.getElementById("prows").appendChild(d);
@@ -861,6 +911,7 @@ function getRows() {
       hsn:  document.getElementById("ph-"+id)?.value||"",
       qty:  document.getElementById("pq-"+id)?.value||"",
       rate: document.getElementById("pr2-"+id)?.value||"",
+      gst:  document.getElementById("pg-"+id)?.value||"18",
       amt:  parseFloat(document.getElementById("pa-"+id)?.value)||0
     };
   }).filter(r=>r.desc||r.qty||r.rate);
@@ -874,24 +925,24 @@ function recalc() {
   const taxable=rows.reduce((s,r)=>s+r.amt,0);
   const packing=parseFloat(document.getElementById("f-packing")?.value)||0;
   const gst=document.getElementById("f-gst")?.value;
-  const base=taxable+packing;
-  let cgst=0,sgst=0,igst=0;
-  if(gst==="cgst_sgst"){cgst=base*.09;sgst=base*.09;}
-  else if(gst==="igst"){igst=base*.18;}
-  const grand=base+cgst+sgst+igst;
+  const ts=taxSummary(rows,packing,gst);
+  const cgst=ts.cgst,sgst=ts.sgst,igst=ts.igst;
+  const raw=taxable+packing+cgst+sgst+igst;
+  const grand=Math.round(raw);          // invoices always settle on a whole rupee
+  const roundOff=grand-raw;
   document.getElementById("t-tax").textContent =inr(taxable);
   document.getElementById("t-pack").textContent=inr(packing);
-  document.getElementById("t-cgst").textContent=inr(cgst);
-  document.getElementById("t-sgst").textContent=inr(sgst);
-  document.getElementById("t-igst").textContent=inr(igst);
+  const tr=document.getElementById("t-taxrows");
+  if(tr) tr.innerHTML=screenTaxRows(ts,gst);
+  const rr=document.getElementById("r-round");
+  if(rr){
+    rr.style.display=Math.abs(roundOff)>=0.005?"":"none";
+    document.getElementById("t-round").textContent=(roundOff<0?"\u2212 ":"+ ")+inr(Math.abs(roundOff));
+  }
   document.getElementById("t-grand").textContent=inr(grand);
   const twEl=document.getElementById("f-taxwords");
   if(twEl) twEl.value=grandTotalToWords(grand);
-  const cs=gst==="cgst_sgst";
-  document.getElementById("r-cgst").style.display=cs?"":"none";
-  document.getElementById("r-sgst").style.display=cs?"":"none";
-  document.getElementById("r-igst").style.display=gst==="igst"?"":"none";
-  return{taxable,packing,cgst,sgst,igst,grand};
+  return{taxable,packing,cgst,sgst,igst,grand,roundOff};
 }
 
 // ═══════════════════════════════════════════════════
@@ -901,7 +952,7 @@ function collect() {
   const t=recalc();
   const rows=getRows();
   const productsStr=rows.map(p=>
-    `${p.desc} | HSN:${p.hsn} | Qty:${p.qty} | Rate:${p.rate} | Amt:${p.amt.toFixed(2)}`
+    `${p.desc} | HSN:${p.hsn} | Qty:${p.qty} | Rate:${p.rate} | GST:${p.gst}% | Amt:${p.amt.toFixed(2)}`
   ).join(" ;; ");
   return {
     timestamp:     new Date().toISOString(),
@@ -1120,6 +1171,8 @@ function autofillProduct(n) {
 }
 
 function renderHist(list) {
+  syncFY("h-fy",allHist,"invoiceDate");
+  hFoot("hfoot",list,allHist,"grand",inr);
   const tb=document.getElementById("hbody");
   if(!list.length) {
     tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No invoices yet.</p></div></td></tr>`;
@@ -1143,13 +1196,21 @@ function renderHist(list) {
     </tr>`).join("");
 }
 
-function filterHist() {
-  const q=document.getElementById("hsearch").value.toLowerCase();
-  renderHist(allHist.filter(i=>
-    (i.invoiceNo||"").toLowerCase().includes(q)||
-    (i.clientName||"").toLowerCase().includes(q)||
-    (i.transport||"").toLowerCase().includes(q)
-  ));
+const H_IDS={fy:"h-fy",from:"h-from",to:"h-to",min:"h-min",max:"h-max"};
+function filteredInv(){
+  syncFY("h-fy",allHist,"invoiceDate");
+  const q=(document.getElementById("hsearch")?.value||"").toLowerCase();
+  return allHist.filter(i=>
+    ((i.invoiceNo||"").toLowerCase().includes(q)||
+     (i.clientName||"").toLowerCase().includes(q)||
+     (i.transport||"").toLowerCase().includes(q))
+    && passRange(i,"invoiceDate","grand",H_IDS));
+}
+function filterHist(){ renderHist(filteredInv()); }
+function clearHFilters(){
+  resetFilters(H_IDS);
+  const s=document.getElementById("hsearch"); if(s) s.value="";
+  filterHist();
 }
 
 function findInv(no) { return allHist.find(i=>String(i.invoiceNo)===String(no)); }
@@ -1278,7 +1339,11 @@ function editInv(no) {
   // Rebuild product rows from saved data
   document.getElementById("prows").innerHTML="";
   RC=0;
-  const products=(inv.products&&inv.products.length)?inv.products:[{}];
+  // Recover per-item GST% for records saved before rate-wise billing existed
+  const _ir=withRates(inv.products,(+inv.taxable||0)+(+inv.packing||0),
+                      (+inv.cgst||0)+(+inv.sgst||0)+(+inv.igst||0),inv.gstType||"cgst_sgst");
+  const invRates=[_ir.length?_ir[0].gst:18];
+  const products=(_ir&&_ir.length)?_ir:[{}];
   products.forEach(p=>{
     addRow();
     const n=RC;
@@ -1286,6 +1351,8 @@ function editInv(no) {
     document.getElementById("ph-"+n).value=p.hsn||"";
     document.getElementById("pq-"+n).value=p.qty||"";
     document.getElementById("pr2-"+n).value=p.rate||"";
+    const gsel=document.getElementById("pg-"+n);
+    if(gsel) gsel.value=String(GST_RATES.indexOf(parseFloat(p.gst))>=0?p.gst:invRates[0]);
     if(p.qty && p.rate) calcAmt(n);
     else if(p.amt) document.getElementById("pa-"+n).value=(+p.amt).toFixed(2);
   });
@@ -1322,19 +1389,28 @@ document.getElementById("modal").addEventListener("click",function(e){if(e.targe
 // ═══════════════════════════════════════════════════
 function buildHTML(d) {
   const gt=d.gstType||"cgst_sgst";
+  const _rows=withRates(d.products,(+d.taxable||0)+(+d.packing||0),
+                        (+d.cgst||0)+(+d.sgst||0)+(+d.igst||0),gt);
+  const _ts=taxSummary(_rows,d.packing,gt);
+  const _one=_ts.lines.length===1?_ts.lines[0].rate:null;
   const cgstLine=gt==="cgst_sgst"?`
-    <div class="sr"><span class="ml">CGST (9%)</span><span class="mv">${inr(d.cgst)}</span></div>
-    <div class="sr"><span class="ml">SGST (9%)</span><span class="mv">${inr(d.sgst)}</span></div>`:"";
+    <div class="sr"><span class="ml">CGST${_one!==null?" ("+(_one/2)+"%)":""}</span><span class="mv">${inr(d.cgst)}</span></div>
+    <div class="sr"><span class="ml">SGST${_one!==null?" ("+(_one/2)+"%)":""}</span><span class="mv">${inr(d.sgst)}</span></div>`:"";
   const igstLine=gt==="igst"?`
-    <div class="sr"><span class="ml">IGST (18%)</span><span class="mv">${inr(d.igst)}</span></div>`:"";
+    <div class="sr"><span class="ml">IGST${_one!==null?" ("+_one+"%)":""}</span><span class="mv">${inr(d.igst)}</span></div>`:"";
+  const _ro=roundOffOf([d.taxable,d.packing,d.cgst,d.sgst,d.igst],d.grand);
+  const roundLine=Math.abs(_ro)>=0.005?`
+    <div class="sr"><span class="ml">Round Off</span><span class="mv">${(_ro<0?"\u2212 ":"+ ")+inr(Math.abs(_ro))}</span></div>`:"";
+  const taxTbl=taxTableHTML(_ts,gt);
 
-  const prods=(d.products||[]).map((p,i)=>`
+  const prods=_rows.map((p,i)=>`
     <tr>
       <td class="cs">${i+1}</td>
       <td class="cd">${esc(p.desc)||""}</td>
       <td class="ch">${esc(p.hsn)||""}</td>
       <td class="cq">${esc(p.qty)||""}</td>
       <td class="cr">${inr(p.rate)}</td>
+      <td class="cg">${gt==="nil"?"NIL":esc(String(p.gst))+"%"}</td>
       <td class="ca">${inr(p.amt)}</td>
     </tr>`).join("");
 
@@ -1361,9 +1437,18 @@ function buildHTML(d) {
     table{width:100%;border-collapse:collapse;margin-bottom:10px}
     th{background:var(--pc);color:#fff;text-align:left;padding:10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
     td{padding:12px 10px;border-bottom:1px solid var(--bc);vertical-align:top}
-    .cs{width:8%}.cd{width:47%}.ch{width:12%}
-    .cq{width:8%;text-align:center}.cr{width:11%;text-align:right}.ca{width:14%;text-align:right}
-    th.cq,th.cr,th.ca{text-align:right}
+    .cs{width:6%}.cd{width:39%}.ch{width:11%}
+    .cq{width:7%;text-align:center}.cr{width:11%;text-align:right}
+    .cg{width:9%;text-align:center}.ca{width:17%;text-align:right}
+    th.cq,th.cr,th.ca{text-align:right}th.cg{text-align:center}
+    .taxsum{margin:6px 0 14px}
+    .tsh{font-size:10px;font-weight:800;letter-spacing:.6px;color:var(--sc);margin-bottom:5px}
+    .tst{width:100%;border-collapse:collapse;font-size:11.5px;margin:0}
+    .tst th{background:var(--lb);padding:6px 8px;border:1px solid var(--bc);text-align:right;font-size:10px}
+    .tst th:first-child{text-align:left}
+    .tst td{padding:6px 8px;border:1px solid var(--bc);text-align:right}
+    .tst td:first-child{text-align:left;font-weight:700}
+    .tst tr.tt td{font-weight:800;background:var(--lb)}
     .msb{background:#e2e8f0;padding:8px 12px;border-radius:4px;font-weight:bold;font-size:12px;margin-bottom:20px;display:flex;justify-content:space-between}
     .bs{display:grid;grid-template-columns:55% 45%;gap:25px;margin-top:10px;page-break-inside:avoid}
     .wb{background:var(--lb);padding:10px;border-radius:4px;font-size:12px;margin-bottom:15px}
@@ -1420,7 +1505,7 @@ function buildHTML(d) {
       <thead><tr>
         <th class="cs">Sr.</th><th class="cd">Description of Goods</th>
         <th class="ch">HSN Code</th><th class="cq">Qty</th>
-        <th class="cr">Rate</th><th class="ca">Amount</th>
+        <th class="cr">Rate</th><th class="cg">GST %</th><th class="ca">Amount</th>
       </tr></thead>
       <tbody>${prods}</tbody>
     </table>
@@ -1428,6 +1513,7 @@ function buildHTML(d) {
       <span>SHIPMENT MANIFEST SUMMARY:</span>
       <span style="font-size:15px;font-weight:800;color:#000;letter-spacing:.3px">TOTAL PACKAGES / PARCELS: ${esc(d.parcels)||1} NOS</span>
     </div>
+    ${taxTbl}
     <div class="bs">
       <div>
         <div class="wb"><strong>Grand Total in Words:</strong><br>${esc(d.taxWords)||"—"}</div>
@@ -1436,7 +1522,7 @@ function buildHTML(d) {
       <div class="fsb">
         <div class="sr"><span class="ml">Taxable Value</span><span class="mv">${inr(d.taxable)}</span></div>
         <div class="sr"><span class="ml">Packing Charges</span><span class="mv">${inr(d.packing)}</span></div>
-        ${cgstLine}${igstLine}
+        ${cgstLine}${igstLine}${roundLine}
         <div class="sr gt"><span>Grand Total</span><span>${inr(d.grand)}</span></div>
       </div>
     </div>
@@ -1497,6 +1583,176 @@ function escBr(s){return esc(s==null?"":s).replace(/\n/g,"<br>");}
 
 // Consistent Indian-rupee formatting everywhere: ₹1,23,456.00
 function inr(n){return "₹"+(+n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+// ═══ GST RATE ENGINE ═══
+// Each line item carries its own GST %. Packing / P&F is apportioned
+// across the items pro-rata by value, so the rate-wise split always
+// reconciles exactly with the grand total.
+const GST_RATES=[0,5,12,18,28];
+function rowRate(r,gstType){
+  if(gstType==="nil") return 0;
+  const v=parseFloat(r&&r.gst);
+  return GST_RATES.indexOf(v)>=0?v:18;
+}
+function taxSummary(rows,extra,gstType){
+  rows=rows||[]; extra=parseFloat(extra)||0;
+  const sum=rows.reduce((s,r)=>s+(parseFloat(r.amt)||0),0);
+  const map={};
+  const push=(rate,base)=>{
+    if(!map[rate]) map[rate]={rate:rate,base:0,cgst:0,sgst:0,igst:0};
+    map[rate].base+=base;
+  };
+  rows.forEach(r=>{
+    const amt=parseFloat(r.amt)||0;
+    push(rowRate(r,gstType), amt + (sum>0?extra*(amt/sum):0));
+  });
+  if(!rows.length && extra>0) push(gstType==="nil"?0:18, extra);
+  const lines=Object.keys(map).map(k=>map[k]).sort((a,b)=>a.rate-b.rate);
+  lines.forEach(l=>{
+    if(gstType==="cgst_sgst"){ l.cgst=l.base*l.rate/200; l.sgst=l.base*l.rate/200; }
+    else if(gstType==="igst"){ l.igst=l.base*l.rate/100; }
+  });
+  const t=(k)=>lines.reduce((s,l)=>s+l[k],0);
+  return {lines:lines,taxable:sum,base:sum+extra,cgst:t("cgst"),sgst:t("sgst"),igst:t("igst")};
+}
+// Older saved documents have no per-row GST %. Infer it from the stored
+// totals so reprints and edits of historical records stay accurate.
+function withRates(products,base,taxTotal,gstType){
+  const rows=(products||[]).map(p=>Object.assign({},p));
+  if(gstType==="nil"){ rows.forEach(p=>p.gst=0); return rows; }
+  const missing=rows.some(p=>GST_RATES.indexOf(parseFloat(p.gst))<0);
+  if(!missing) return rows;
+  const eff=(parseFloat(base)||0)>0?((parseFloat(taxTotal)||0)/base)*100:18;
+  let near=18,best=1e9;
+  GST_RATES.forEach(r=>{const d=Math.abs(r-eff); if(d<best){best=d;near=r;}});
+  rows.forEach(p=>{ if(GST_RATES.indexOf(parseFloat(p.gst))<0) p.gst=near; });
+  return rows;
+}
+function roundOffOf(parts,grand){
+  const raw=parts.reduce((s,v)=>s+(parseFloat(v)||0),0);
+  return (parseFloat(grand)||0)-raw;
+}
+// On-screen tax rows for the Financial Summary panel
+function screenTaxRows(ts,gstType){
+  if(gstType==="nil")
+    return '<div class="trow"><span class="tlabel">GST (NIL / Exempt)</span><span class="tval">'+inr(0)+'</span></div>';
+  const one=ts.lines.length===1?ts.lines[0].rate:null;
+  const suf=(d)=>one!==null?" ("+(one/d)+"%)":"";
+  let h="";
+  if(gstType==="cgst_sgst"){
+    h+='<div class="trow"><span class="tlabel">CGST'+suf(2)+'</span><span class="tval">'+inr(ts.cgst)+'</span></div>';
+    h+='<div class="trow"><span class="tlabel">SGST'+suf(2)+'</span><span class="tval">'+inr(ts.sgst)+'</span></div>';
+  } else if(gstType==="igst"){
+    h+='<div class="trow"><span class="tlabel">IGST'+suf(1)+'</span><span class="tval">'+inr(ts.igst)+'</span></div>';
+  }
+  if(one===null) h+=ts.lines.map(l=>'<div class="trow sub"><span class="tlabel">@ '+l.rate+'% on '+inr(l.base)+'</span><span class="tval">'+inr(l.cgst+l.sgst+l.igst)+'</span></div>').join("");
+  return h;
+}
+// Rate-wise tax table for the printed document (only when rates are mixed)
+function taxTableHTML(ts,gstType){
+  if(gstType==="nil"||ts.lines.length<2) return "";
+  const cs=gstType==="cgst_sgst";
+  const head=cs?"<th>GST Rate</th><th>Taxable Value</th><th>CGST</th><th>SGST</th><th>Total Tax</th>"
+               :"<th>GST Rate</th><th>Taxable Value</th><th>IGST</th><th>Total Tax</th>";
+  const body=ts.lines.map(l=>cs
+    ?"<tr><td>"+l.rate+"%</td><td>"+inr(l.base)+"</td><td>"+inr(l.cgst)+"</td><td>"+inr(l.sgst)+"</td><td>"+inr(l.cgst+l.sgst)+"</td></tr>"
+    :"<tr><td>"+l.rate+"%</td><td>"+inr(l.base)+"</td><td>"+inr(l.igst)+"</td><td>"+inr(l.igst)+"</td></tr>").join("");
+  const tot=cs
+    ?"<tr class=\"tt\"><td>Total</td><td>"+inr(ts.base)+"</td><td>"+inr(ts.cgst)+"</td><td>"+inr(ts.sgst)+"</td><td>"+inr(ts.cgst+ts.sgst)+"</td></tr>"
+    :"<tr class=\"tt\"><td>Total</td><td>"+inr(ts.base)+"</td><td>"+inr(ts.igst)+"</td><td>"+inr(ts.igst)+"</td></tr>";
+  return '<div class="taxsum"><div class="tsh">TAX SUMMARY (RATE-WISE)</div><table class="tst"><thead><tr>'+head+"</tr></thead><tbody>"+body+tot+"</tbody></table></div>";
+}
+
+// ═══ SMART TITLE CASE ═══
+// Typing in ALL CAPS is auto-corrected to Title Case when you leave the
+// field. Short all-caps tokens (VRL, TCI) and listed acronyms are kept,
+// single letters stay as initials, and anything you deliberately typed in
+// mixed case (McDonald) is left exactly as you wrote it.
+const TC_KEEP=["GIDC","MIDC","DTDC","SRMT","GATI","BSNL","ONGC","IOCL","NTPC","APMC","AUDA","PGVCL","MGVCL","UGVCL","DGVCL","GEB","LLP","LLC","INC","OPC","HUF","SEZ","RTO","GST","PVC","UPVC"];
+function tcWord(w){
+  if(!w) return w;
+  if(/[0-9]/.test(w)) return w;
+  const bare=w.replace(/[^A-Za-z]/g,"");
+  if(!bare) return w;
+  if(bare.length===1) return w.toUpperCase();
+  const up=bare===bare.toUpperCase(), lo=bare===bare.toLowerCase();
+  if(!up && !lo) return w;
+  if(up && (bare.length<=3 || TC_KEEP.indexOf(bare)>=0)) return w;
+  return w.toLowerCase()
+          .replace(/(^|[^A-Za-z'])([a-z])/g,(m,p,c)=>p+c.toUpperCase())
+          .replace(/'([a-z]{2,})/g,(m,g)=>"'"+g.charAt(0).toUpperCase()+g.slice(1));
+}
+function smartTitleCase(s){
+  if(!s) return s;
+  return String(s).replace(/[^\s]+/g,tcWord);
+}
+function initTitleCase(){
+  ["f-cname","f-cloc","f-transport","f-dest","q-cname"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el||!el.dataset||el.dataset.tc||typeof el.addEventListener!=="function") return;
+    el.dataset.tc="1";
+    el.addEventListener("blur",()=>{
+      const nv=smartTitleCase(el.value);
+      if(nv!==el.value) el.value=nv;
+    });
+  });
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initTitleCase);
+else initTitleCase();
+
+// ═══ HISTORY FILTER HELPERS ═══
+function isoDate(s){
+  if(!s) return "";
+  s=String(s);
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return m[3]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2);
+  const d=new Date(s);
+  if(isNaN(d)) return "";
+  const p=n=>("0"+n).slice(-2);
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function fyOf(iso){
+  if(!iso) return "";
+  const y=+iso.slice(0,4), m=+iso.slice(5,7);
+  const s=m>=4?y:y-1;
+  return s+"-"+("0"+((s+1)%100)).slice(-2);
+}
+function syncFY(selId,list,key){
+  const el=document.getElementById(selId); if(!el) return;
+  const seen={},fys=[];
+  (list||[]).forEach(x=>{const f=fyOf(isoDate(x[key])); if(f&&!seen[f]){seen[f]=1;fys.push(f);}});
+  fys.sort().reverse();
+  const sig=fys.join("|");
+  if(el.dataset.fys===sig) return;
+  el.dataset.fys=sig;
+  const cur=el.value;
+  el.innerHTML='<option value="">All FY</option>'+fys.map(f=>'<option value="'+f+'">FY '+f+"</option>").join("");
+  if(fys.indexOf(cur)>=0) el.value=cur;
+}
+function passRange(x,dateKey,amtKey,ids){
+  const iso=isoDate(x[dateKey]);
+  const g=id=>{const e=document.getElementById(id); return e?e.value:"";};
+  const fy=g(ids.fy), f=g(ids.from), t=g(ids.to);
+  if(fy && fyOf(iso)!==fy) return false;
+  if(f && (!iso || iso<f)) return false;
+  if(t && (!iso || iso>t)) return false;
+  const amt=parseFloat(x[amtKey])||0;
+  const mn=parseFloat(g(ids.min)), mx=parseFloat(g(ids.max));
+  if(!isNaN(mn) && amt<mn) return false;
+  if(!isNaN(mx) && amt>mx) return false;
+  return true;
+}
+function hFoot(id,list,all,key,fmt){
+  const el=document.getElementById(id); if(!el) return;
+  const sum=(list||[]).reduce((s,x)=>s+(parseFloat(x[key])||0),0);
+  el.innerHTML='<span>Showing <strong>'+(list||[]).length+'</strong> of <strong>'+(all||[]).length+
+    '</strong> records</span><span>Total value: <strong>'+fmt(sum)+"</strong></span>";
+}
+function resetFilters(ids){
+  Object.keys(ids).forEach(k=>{const e=document.getElementById(ids[k]); if(e) e.value="";});
+}
+
 
 // ─── UPI "SCAN TO PAY" QR ───
 // Builds a self-contained QR image (data URL) so printed/PDF documents
@@ -1574,11 +1830,7 @@ function exportToXlsx(rows,sheetName,fileName){
   XLSX.writeFile(wb,fileName);
 }
 function exportInvExcel(){
-  const q=(document.getElementById("hsearch").value||"").toLowerCase();
-  const list=allHist.filter(i=>
-    (i.invoiceNo||"").toLowerCase().includes(q)||
-    (i.clientName||"").toLowerCase().includes(q)||
-    (i.transport||"").toLowerCase().includes(q));
+  const list=filteredInv();
   exportToXlsx(list.map(d=>({
     "Invoice No":d.invoiceNo,"Date":fmtDate(d.invoiceDate),"Customer":d.clientName,
     "Mobile":d.clientMobile,"Location":d.clientLocation,"Billing Address":d.clientAddress||"","GSTIN":d.clientGstin,
@@ -1586,14 +1838,12 @@ function exportInvExcel(){
     "Challan No":d.challan,"Buyer PO":d.po,"GST Type":d.gstType,
     "Taxable (₹)":(+d.taxable||0).toFixed(2),"Packing (₹)":(+d.packing||0).toFixed(2),
     "CGST (₹)":(+d.cgst||0).toFixed(2),"SGST (₹)":(+d.sgst||0).toFixed(2),"IGST (₹)":(+d.igst||0).toFixed(2),
+    "Round Off (₹)":roundOffOf([d.taxable,d.packing,d.cgst,d.sgst,d.igst],d.grand).toFixed(2),
     "Grand Total (₹)":(+d.grand||0).toFixed(2),"Amount in Words":d.taxWords,"Notes":d.notes
   })),"Invoices","jigar-invoices-"+todayLocal()+".xlsx");
 }
 function exportQuotExcel(){
-  const q=(document.getElementById("qhsearch").value||"").toLowerCase();
-  const list=allQHist.filter(i=>
-    (i.quotNo||"").toLowerCase().includes(q)||
-    (i.cname||"").toLowerCase().includes(q));
+  const list=filteredQuot();
   exportToXlsx(list.map(d=>({
     "Quotation No":d.quotNo,"Date":fmtDate(d.date),"Customer":d.cname,
     "Mobile":d.cmobile,"Delivery Address":d.addr,"GSTIN":d.cgstin,
@@ -1601,6 +1851,7 @@ function exportQuotExcel(){
     "GST Type":d.gstType,"Subtotal (₹)":(+d.subtotal||0).toFixed(2),
     "P&F":d.pfType==="extra"?(+d.pfAmt||0).toFixed(2):"Included",
     "CGST (₹)":(+d.cgst||0).toFixed(2),"SGST (₹)":(+d.sgst||0).toFixed(2),"IGST (₹)":(+d.igst||0).toFixed(2),
+    "Round Off (₹)":roundOffOf([d.subtotal,d.pfType==="extra"?d.pfAmt:0,d.cgst,d.sgst,d.igst],d.grand).toFixed(2),
     "Net Value (₹)":(+d.grand||0).toFixed(2),"Amount in Words":d.amtWords,"Terms":d.terms
   })),"Quotations","jigar-quotations-"+todayLocal()+".xlsx");
 }
@@ -1661,7 +1912,7 @@ function addQRow() {
   QRC++;const n=QRC;
   const d=document.createElement("div");
   d.className="prow";
-  d.style.gridTemplateColumns="28px 1fr 1.8fr 1fr 90px 80px 110px 32px";
+  d.style.gridTemplateColumns="28px 0.9fr 1.6fr 0.9fr 84px 62px 72px 96px 32px";
   d.id="qpr-"+n;
   d.innerHTML=`
     <div class="rnum">${n}</div>
@@ -1670,6 +1921,10 @@ function addQRow() {
     <input type="text" placeholder="Brand/Make" id="qm-${n}">
     <input type="number" class="r" placeholder="0.00" id="qr2-${n}" min="0" oninput="calcQAmt(${n})">
     <input type="number" class="r" placeholder="0" id="qq-${n}" min="0" oninput="calcQAmt(${n})">
+    <select id="qg-${n}" onchange="recalcQ()">
+      <option value="0">0%</option><option value="5">5%</option><option value="12">12%</option>
+      <option value="18" selected>18%</option><option value="28">28%</option>
+    </select>
     <input class="r" id="qa-${n}" readonly placeholder="0.00">
     <button class="rmbtn" onclick="remQRow(${n})">−</button>`;
   document.getElementById("q-prows").appendChild(d);
@@ -1698,6 +1953,7 @@ function getQRows() {
       make: document.getElementById("qm-"+id)?.value||"",
       rate: document.getElementById("qr2-"+id)?.value||"",
       qty:  document.getElementById("qq-"+id)?.value||"",
+      gst:  document.getElementById("qg-"+id)?.value||"18",
       amt:  parseFloat(document.getElementById("qa-"+id)?.value)||0
     };
   }).filter(r=>r.desc||r.qty||r.rate);
@@ -1711,23 +1967,23 @@ function recalcQ() {
   const pfAmt=pfType==="extra"?(parseFloat(document.getElementById("q-pf-amt")?.value)||0):0;
   document.getElementById("q-pf-amt-row").style.display=pfType==="extra"?"":"none";
   const gst=document.getElementById("q-gst")?.value||"cgst_sgst";
-  const taxBase=subtotal+pfAmt;
-  let cgst=0,sgst=0,igst=0;
-  if(gst==="cgst_sgst"){cgst=taxBase*.09;sgst=taxBase*.09;}
-  else if(gst==="igst"){igst=taxBase*.18;}
-  const grand=taxBase+cgst+sgst+igst;
+  const ts=taxSummary(rows,pfAmt,gst);
+  const cgst=ts.cgst,sgst=ts.sgst,igst=ts.igst;
+  const raw=subtotal+pfAmt+cgst+sgst+igst;
+  const grand=Math.round(raw);
+  const roundOff=grand-raw;
   document.getElementById("qt-sub").textContent=inr(subtotal);
   document.getElementById("qt-pf").textContent=pfType==="included"?"INCLUDED":inr(pfAmt);
-  document.getElementById("qt-cgst").textContent=inr(cgst);
-  document.getElementById("qt-sgst").textContent=inr(sgst);
-  document.getElementById("qt-igst").textContent=inr(igst);
+  const qtr=document.getElementById("qt-taxrows");
+  if(qtr) qtr.innerHTML=screenTaxRows(ts,gst);
+  const qrr=document.getElementById("qr-round");
+  if(qrr){
+    qrr.style.display=Math.abs(roundOff)>=0.005?"":"none";
+    document.getElementById("qt-round").textContent=(roundOff<0?"\u2212 ":"+ ")+inr(Math.abs(roundOff));
+  }
   document.getElementById("qt-grand").textContent=inr(grand);
   document.getElementById("qt-words").textContent=grandTotalToWords(grand);
-  const cs=gst==="cgst_sgst";
-  document.getElementById("qr-cgst").style.display=cs?"":"none";
-  document.getElementById("qr-sgst").style.display=cs?"":"none";
-  document.getElementById("qr-igst").style.display=gst==="igst"?"":"none";
-  return{subtotal,pfType,pfAmt,cgst,sgst,igst,grand,amtWords:grandTotalToWords(grand)};
+  return{subtotal,pfType,pfAmt,cgst,sgst,igst,grand,roundOff,amtWords:grandTotalToWords(grand)};
 }
 
 // ─── COLLECT QUOT FORM DATA ───
@@ -1735,7 +1991,7 @@ function collectQ() {
   const t=recalcQ();
   const rows=getQRows();
   const productsStr=rows.map(p=>
-    `${p.desc} | HSN:${p.hsn} | Make:${p.make} | Qty:${p.qty} | Rate:${p.rate} | Amt:${p.amt.toFixed(2)}`
+    `${p.desc} | HSN:${p.hsn} | Make:${p.make} | Qty:${p.qty} | Rate:${p.rate} | GST:${p.gst}% | Amt:${p.amt.toFixed(2)}`
   ).join(" ;; ");
   return {
     timestamp: new Date().toISOString(),
@@ -1836,6 +2092,8 @@ async function loadQHist() {
 }
 
 function renderQHist(list) {
+  syncFY("q-fy",allQHist,"date");
+  hFoot("qhfoot",list,allQHist,"grand",inr);
   const tb=document.getElementById("qhbody");
   if(!list.length){
     tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No quotations yet.</p></div></td></tr>`;
@@ -1859,12 +2117,20 @@ function renderQHist(list) {
     </tr>`).join("");
 }
 
-function filterQHist() {
-  const q=document.getElementById("qhsearch").value.toLowerCase();
-  renderQHist(allQHist.filter(i=>
-    (i.quotNo||"").toLowerCase().includes(q)||
-    (i.cname||"").toLowerCase().includes(q)
-  ));
+const Q_IDS={fy:"q-fy",from:"q-from",to:"q-to",min:"q-min",max:"q-max"};
+function filteredQuot(){
+  syncFY("q-fy",allQHist,"date");
+  const q=(document.getElementById("qhsearch")?.value||"").toLowerCase();
+  return allQHist.filter(i=>
+    ((i.quotNo||"").toLowerCase().includes(q)||
+     (i.cname||"").toLowerCase().includes(q))
+    && passRange(i,"date","grand",Q_IDS));
+}
+function filterQHist(){ renderQHist(filteredQuot()); }
+function clearQFilters(){
+  resetFilters(Q_IDS);
+  const s=document.getElementById("qhsearch"); if(s) s.value="";
+  filterQHist();
 }
 
 function findQuot(no){return allQHist.find(i=>String(i.quotNo)===String(no));}
@@ -1935,7 +2201,10 @@ function editQuot(no) {
   // Rebuild product rows from saved data
   document.getElementById("q-prows").innerHTML="";
   QRC=0;
-  const products=(q.products&&q.products.length)?q.products:[{}];
+  const _qr=withRates(q.products,(+q.subtotal||0)+(+q.pfAmt||0),
+                      (+q.cgst||0)+(+q.sgst||0)+(+q.igst||0),q.gstType||"cgst_sgst");
+  const quotRates=[_qr.length?_qr[0].gst:18];
+  const products=(_qr&&_qr.length)?_qr:[{}];
   products.forEach(p=>{
     addQRow();
     const n=QRC;
@@ -1944,6 +2213,8 @@ function editQuot(no) {
     document.getElementById("qm-"+n).value=p.make||"";
     document.getElementById("qr2-"+n).value=p.rate||"";
     document.getElementById("qq-"+n).value=p.qty||"";
+    const qgs=document.getElementById("qg-"+n);
+    if(qgs) qgs.value=String(GST_RATES.indexOf(parseFloat(p.gst))>=0?p.gst:quotRates[0]);
     // Recalculate each row total (same fix as editProf)
     if(p.qty && p.rate) calcQAmt(n);
     else if(p.amt) document.getElementById("qa-"+n).value=(+p.amt).toFixed(2);
@@ -1972,15 +2243,23 @@ function buildQuotHTML(d) {
   const pfType=d.pfType||"included";
   const pfAmt=parseFloat(d.pfAmt)||0;
 
+  const _qrows=withRates(d.products,(+d.subtotal||0)+(+pfAmt||0),
+                         (+d.cgst||0)+(+d.sgst||0)+(+d.igst||0),gt);
+  const _qts=taxSummary(_qrows,pfAmt,gt);
+  const _qone=_qts.lines.length===1?_qts.lines[0].rate:null;
+  const _qro=roundOffOf([d.subtotal,pfAmt,d.cgst,d.sgst,d.igst],d.grand);
+  const roundLine=Math.abs(_qro)>=0.005?`
+    <div class="summary-row"><span class="ml">Round Off</span><span class="mv">${(_qro<0?"\u2212 ":"+ ")+inr(Math.abs(_qro))}</span></div>`:"";
+  const qTaxTbl=taxTableHTML(_qts,gt);
   const cgstLine=gt==="cgst_sgst"?`
-    <div class="summary-row"><span class="meta-label">Central Tax CGST (9%)</span><span class="meta-value">${inr(d.cgst)}</span></div>
-    <div class="summary-row"><span class="meta-label">State Tax SGST (9%)</span><span class="meta-value">${inr(d.sgst)}</span></div>`:"";
+    <div class="summary-row"><span class="meta-label">Central Tax CGST${_qone!==null?" ("+(_qone/2)+"%)":""}</span><span class="meta-value">${inr(d.cgst)}</span></div>
+    <div class="summary-row"><span class="meta-label">State Tax SGST${_qone!==null?" ("+(_qone/2)+"%)":""}</span><span class="meta-value">${inr(d.sgst)}</span></div>`:"";
   const igstLine=gt==="igst"?`
-    <div class="summary-row"><span class="meta-label">Integrated Tax IGST (18%)</span><span class="meta-value">${inr(d.igst)}</span></div>`:"";
+    <div class="summary-row"><span class="meta-label">Integrated Tax IGST${_qone!==null?" ("+_qone+"%)":""}</span><span class="meta-value">${inr(d.igst)}</span></div>`:"";
   const nilLine=gt==="nil"?`
     <div class="summary-row"><span class="meta-label">GST (0% - NIL/Exempt)</span><span class="meta-value">₹0.00</span></div>`:"";
 
-  const prods=(d.products||[]).map((p,i)=>`
+  const prods=_qrows.map((p,i)=>`
     <tr>
       <td style="text-align:center">${i+1}</td>
       <td>${esc(p.hsn)||""}</td>
@@ -1988,9 +2267,19 @@ function buildQuotHTML(d) {
       <td style="text-align:center;font-weight:bold">${esc(p.make)||""}</td>
       <td style="text-align:right">${inr(p.rate)}</td>
       <td style="text-align:center">${esc(p.qty)||""}</td>
+      <td style="text-align:center">${gt==="nil"?"NIL":esc(String(p.gst))+"%"}</td>
       <td style="text-align:right">${inr(p.amt)}</td>
     </tr>`).join("");
 
+  const taxsumCSS=`
+    .taxsum{margin:6px 0 14px}
+    .tsh{font-size:10px;font-weight:800;letter-spacing:.6px;color:#555;margin-bottom:5px}
+    .tst{width:100%;border-collapse:collapse;font-size:11.5px;margin:0}
+    .tst th{background:#f8f9fa;padding:6px 8px;border:1px solid #ccc;text-align:right;font-size:10px}
+    .tst th:first-child{text-align:left}
+    .tst td{padding:6px 8px;border:1px solid #ccc;text-align:right}
+    .tst td:first-child{text-align:left;font-weight:700}
+    .tst tr.tt td{font-weight:800;background:#f8f9fa}`;
   const termsHTML=(d.terms||"").trim()?`
     <div class="policy-box">
       <strong>Commercial Terms & Conditions</strong>
@@ -2052,6 +2341,7 @@ function buildQuotHTML(d) {
     .sig-sub{font-size:11px;color:#666;margin-top:2px}
     .sig-space{height:55px}
     .ty{margin-top:15px;text-align:center;font-weight:bold;font-size:11px;letter-spacing:1px;color:#555}
+    ${taxsumCSS}
     @media print{body{padding:0;background:#fff}@page{margin:1.2cm}}
   </style></head><body>
   <div class="wrap">
@@ -2092,22 +2382,24 @@ function buildQuotHTML(d) {
     </div>
     <table>
       <thead><tr>
-        <th width="6%" style="text-align:center">Sr.</th>
-        <th width="8%">HSN</th>
-        <th width="48%">Description</th>
-        <th width="10%" style="text-align:center">Make</th>
-        <th width="12%" style="text-align:right">Unit Rate</th>
+        <th width="5%" style="text-align:center">Sr.</th>
+        <th width="7%">HSN</th>
+        <th width="42%">Description</th>
+        <th width="9%" style="text-align:center">Make</th>
+        <th width="11%" style="text-align:right">Unit Rate</th>
         <th width="4%" style="text-align:center">Qty</th>
-        <th width="12%" style="text-align:right">Amount</th>
+        <th width="8%" style="text-align:center">GST %</th>
+        <th width="14%" style="text-align:right">Amount</th>
       </tr></thead>
       <tbody>${prods}</tbody>
     </table>
+    ${qTaxTbl}
     <div class="bs">
       ${termsHTML}
       <div>
         <div class="summary-row"><span class="ml">Subtotal</span><span class="mv">${inr(d.subtotal)}</span></div>
         <div class="summary-row"><span class="ml">Packing & Forwarding</span><span class="mv" style="${pfType==="included"?"color:green;font-weight:bold":""}">${pfType==="included"?"INCLUDED":inr(pfAmt)}</span></div>
-        ${cgstLine}${igstLine}${nilLine}
+        ${cgstLine}${igstLine}${nilLine}${roundLine}
         <div class="summary-row grand-total"><span>Net Consolidated Offer Value</span><span>${inr(d.grand)}</span></div>
       </div>
     </div>
@@ -2476,6 +2768,8 @@ async function loadPHist(){
 }
 
 function renderPHist(list){
+  syncFY("p-fy",allPHist,"date");
+  hFoot("phfoot",list,allPHist,"cif",usd);
   const tb=document.getElementById("phbody");
   if(!list.length){
     tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No proformas yet.</p></div></td></tr>`;
@@ -2498,13 +2792,21 @@ function renderPHist(list){
       </td>
     </tr>`).join("");
 }
-function filterPHist(){
-  const q=document.getElementById("phsearch").value.toLowerCase();
-  renderPHist(allPHist.filter(i=>
-    (i.profNo||"").toLowerCase().includes(q)||
-    (i.bname||"").toLowerCase().includes(q)||
-    (i.pod||"").toLowerCase().includes(q)
-  ));
+const P_IDS={fy:"p-fy",from:"p-from",to:"p-to",min:"p-min",max:"p-max"};
+function filteredProf(){
+  syncFY("p-fy",allPHist,"date");
+  const q=(document.getElementById("phsearch")?.value||"").toLowerCase();
+  return allPHist.filter(i=>
+    ((i.profNo||"").toLowerCase().includes(q)||
+     (i.bname||"").toLowerCase().includes(q)||
+     (i.pod||"").toLowerCase().includes(q))
+    && passRange(i,"date","cif",P_IDS));
+}
+function filterPHist(){ renderPHist(filteredProf()); }
+function clearPFilters(){
+  resetFilters(P_IDS);
+  const s=document.getElementById("phsearch"); if(s) s.value="";
+  filterPHist();
 }
 function findProf(no){return allPHist.find(i=>String(i.profNo)===String(no));}
 function viewProf(no){
@@ -2781,4 +3083,4 @@ function buildProfHTML(d){
   </body></html>`;
 }
 </script>
-<script>try{if(typeof LOGO!=="undefined"){document.querySelectorAll("img[data-logo]").forEach(function(im){im.src=LOGO;});}}catch(e){}</script></body></html>
+<script>try{if(typeof LOGO!=="undefined"){document.querySelectorAll("img[data-logo]").forEach(function(im){im.src=LOGO;});}}catch(e){}</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a394e78ccc3649a6',t:'MTc4OTExMTE3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
