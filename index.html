@@ -607,6 +607,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <div class="field"><label>Port of Loading</label><input type="text" id="pf-pol" placeholder="e.g. NHAVA SHEVA PORT, INDIA"></div>
         <div class="field"><label>Port of Discharge</label><input type="text" id="pf-pod2" placeholder="e.g. LAGOS APAPA SEA PORT, NIGERIA" oninput="document.getElementById('pf-pod').value=this.value"></div>
       </div>
+      <div class="fr s">
+        <div class="field"><label>Currency*</label>
+          <select id="pf-cur" onchange="onProfCurChange()">
+            <option value="USD" selected>USD — US Dollar ($)</option>
+            <option value="INR">INR — Indian Rupee (₹)</option>
+          </select>
+        </div>
+      </div>
       <div class="incohint" id="pf-incohint"></div>
       <input type="hidden" id="pf-pod">
     </div>
@@ -623,10 +631,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
     </div>
 
     <div class="card fw2">
-      <div class="ctitle"><span>📦</span> Export Items (USD)</div>
+      <div class="ctitle"><span>📦</span> Export Items (<span id="pf-cur-t1">USD</span>)</div>
       <div class="ph" style="grid-template-columns:28px 1fr 2.2fr 100px 70px 110px 32px">
         <span>#</span><span>Export HSN</span><span>Description of Equipment</span>
-        <span class="r">Unit Price ($)</span><span class="r">Qty</span><span class="r">Total FOB ($)</span><span></span>
+        <span class="r">Unit Price (<span class="pf-sym">$</span>)</span><span class="r">Qty</span><span class="r">Total FOB (<span class="pf-sym">$</span>)</span><span></span>
       </div>
       <div class="prows" id="pf-prows" style="border:1.5px solid var(--border);border-top:none;border-radius:0 0 7px 7px;overflow:hidden"></div>
       <button class="addbtn" onclick="addPRow()">+ Add Another Item</button>
@@ -634,16 +642,16 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
     </div>
 
     <div class="card fw2">
-      <div class="ctitle"><span>💰</span> Freight, Insurance & International Terms (USD)</div>
+      <div class="ctitle"><span>💰</span> Freight, Insurance & International Terms (<span id="pf-cur-t2">USD</span>)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
         <div>
           <div class="fr">
-            <div class="field"><label>Export Packing / Handling ($)</label><input type="number" id="pf-pack" value="0" min="0" oninput="recalcP()"></div>
-            <div class="field" id="pf-freight-wrap"><label>Consolidated Freight ($)</label><input type="number" id="pf-freight" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field"><label>Export Packing / Handling (<span class="pf-sym">$</span>)</label><input type="number" id="pf-pack" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field" id="pf-freight-wrap"><label>Consolidated Freight (<span class="pf-sym">$</span>)</label><input type="number" id="pf-freight" value="0" min="0" oninput="recalcP()"></div>
           </div>
           <div class="fr">
-            <div class="field" id="pf-ins-wrap"><label>Marine Insurance ($)</label><input type="number" id="pf-ins" value="0" min="0" oninput="recalcP()"></div>
-            <div class="field" id="pf-duty-wrap" style="display:none"><label>Duties &amp; Customs ($)</label><input type="number" id="pf-duty" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field" id="pf-ins-wrap"><label>Marine Insurance (<span class="pf-sym">$</span>)</label><input type="number" id="pf-ins" value="0" min="0" oninput="recalcP()"></div>
+            <div class="field" id="pf-duty-wrap" style="display:none"><label>Duties &amp; Customs (<span class="pf-sym">$</span>)</label><input type="number" id="pf-duty" value="0" min="0" oninput="recalcP()"></div>
           </div>
           <div class="fr s"><div class="field"><label>Payment Mandate Clause</label><textarea id="pf-pay" style="min-height:52px"></textarea></div></div>
           <div class="fr s"><div class="field"><label>Incoterms Delivery Clause</label><textarea id="pf-inco" style="min-height:52px"></textarea></div></div>
@@ -688,8 +696,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
       <label>FY <select id="p-fy" onchange="filterPHist()"><option value="">All FY</option></select></label>
       <label>From <input type="date" id="p-from" onchange="filterPHist()"></label>
       <label>To <input type="date" id="p-to" onchange="filterPHist()"></label>
-      <label>Min $ <input type="number" id="p-min" min="0" placeholder="0" oninput="filterPHist()"></label>
-      <label>Max $ <input type="number" id="p-max" min="0" placeholder="Any" oninput="filterPHist()"></label>
+      <label>Min <input type="number" id="p-min" min="0" placeholder="0" oninput="filterPHist()"></label>
+      <label>Max <input type="number" id="p-max" min="0" placeholder="Any" oninput="filterPHist()"></label>
       <button class="fclr" onclick="clearPFilters()">✕ Clear</button>
     </div>
     <div class="htw">
@@ -697,7 +705,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
         <thead>
           <tr>
             <th>PI No</th><th>Date</th><th>Buyer</th>
-            <th>Mode</th><th>Port of Discharge</th><th>Total ($)</th><th>Actions</th>
+            <th>Mode</th><th>Port of Discharge</th><th>Total</th><th>Actions</th>
           </tr>
         </thead>
         <tbody id="phbody">
@@ -2618,6 +2626,42 @@ function fmtDateExport(s){
   return String(s);
 }
 function usd(n){ return "$"+(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// ── Proforma currency (USD / INR) ──
+function profCurOf(x){
+  const c=String((x&&(x.currency||x.cur))||"").toUpperCase();
+  if(c==="INR"||c==="USD") return c;
+  // Older/back-end rows have no currency column: infer from the amount in words.
+  return /RUPEE/i.test((x&&x.amtWords)||"")?"INR":"USD";
+}
+function curSym(c){ return c==="INR"?"₹":"$"; }
+function money(n,c){
+  if(c==="INR") return "₹"+(+n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return usd(n);
+}
+function curName(c){ return c==="INR"?"Indian Rupee":"US Dollar"; }
+function inrToWords(amount){
+  amount=Math.abs(+amount||0);
+  const r=Math.floor(amount), ps=Math.round((amount-r)*100);
+  let w="Indian Rupees "+numberToWordsIndian(r);
+  if(ps>0) w+=" and "+numberToWordsIndian(ps)+" Paise";
+  return (w+" Only").toUpperCase();
+}
+function moneyWords(n,c){ return c==="INR"?inrToWords(n):usdToWords(n); }
+function curFooter(list,key){
+  const t={USD:0,INR:0};
+  (list||[]).forEach(x=>{t[profCurOf(x)]+=(parseFloat(x[key])||0);});
+  const parts=[];
+  if((list||[]).some(x=>profCurOf(x)==="USD")||!(list||[]).length) parts.push(money(t.USD,"USD"));
+  if((list||[]).some(x=>profCurOf(x)==="INR")) parts.push(money(t.INR,"INR"));
+  return parts.join(" + ");
+}
+function applyProfCurrency(){
+  const c=document.getElementById("pf-cur")?.value==="INR"?"INR":"USD";
+  document.querySelectorAll(".pf-sym").forEach(e=>e.textContent=curSym(c));
+  ["pf-cur-t1","pf-cur-t2"].forEach(id=>{const e=document.getElementById(id); if(e) e.textContent=c;});
+  return c;
+}
+function onProfCurChange(){ applyProfCurrency(); recalcP(); }
 function nwThree(n){
   let s=""; const h=Math.floor(n/100), r=n%100;
   if(h) s+=NW_ONES[h]+" Hundred"+(r?" ":"");
@@ -2650,6 +2694,7 @@ let pEditingOriginalNo=null;
 let allPHist=[];
 
 function profDefaults(){
+  const _c=document.getElementById("pf-cur"); if(_c) _c.value="USD";
   document.getElementById("pf-pol").value="NHAVA SHEVA PORT, INDIA";
   document.getElementById("pf-transport").value="SEA FREIGHT";
   document.getElementById("pf-inco-code").value="CIF";
@@ -2724,6 +2769,7 @@ function autofillPProduct(n){
 }
 
 function recalcP(){
+  const cur=applyProfCurrency();
   const rows=getPRows();
   const code=document.getElementById("pf-inco-code")?.value||"CIF";
   const T=incoOf(code);
@@ -2739,14 +2785,14 @@ function recalcP(){
   show("pft-pack-row",pack>0); show("pft-freight-row",T.freight);
   show("pft-ins-row",T.ins);   show("pft-duty-row",T.duty);
   const gl=document.getElementById("pft-grand-label");
-  if(gl) gl.textContent=T.total+" (USD)";
-  document.getElementById("pft-fob").textContent=usd(fob);
-  const pe=document.getElementById("pft-pack"); if(pe) pe.textContent=usd(pack);
-  document.getElementById("pft-freight").textContent=usd(freight);
-  document.getElementById("pft-ins").textContent=usd(ins);
-  const de=document.getElementById("pft-duty"); if(de) de.textContent=usd(duty);
-  document.getElementById("pft-cif").textContent=usd(cif);
-  document.getElementById("pft-words").textContent=usdToWords(cif);
+  if(gl) gl.textContent=T.total+" ("+cur+")";
+  document.getElementById("pft-fob").textContent=money(fob,cur);
+  const pe=document.getElementById("pft-pack"); if(pe) pe.textContent=money(pack,cur);
+  document.getElementById("pft-freight").textContent=money(freight,cur);
+  document.getElementById("pft-ins").textContent=money(ins,cur);
+  const de=document.getElementById("pft-duty"); if(de) de.textContent=money(duty,cur);
+  document.getElementById("pft-cif").textContent=money(cif,cur);
+  document.getElementById("pft-words").textContent=moneyWords(cif,cur);
   const hint=document.getElementById("pf-incohint");
   if(hint){
     const inc=[]; if(T.freight)inc.push("freight"); if(T.ins)inc.push("insurance"); if(T.duty)inc.push("import duties");
@@ -2754,7 +2800,7 @@ function recalcP(){
       (inc.length?inc.join(" + "):"goods only")+". "+
       (T.seaOnly?"Sea / inland waterway shipments only.":"Valid for any transport mode.");
   }
-  return{fob,pack,freight,ins,duty,cif,incoCode:T.code,amtWords:usdToWords(cif)};
+  return{fob,pack,freight,ins,duty,cif,currency:cur,incoCode:T.code,amtWords:moneyWords(cif,cur)};
 }
 // Switching the Incoterm re-writes the delivery clause, unless the
 // user has typed their own wording over it.
@@ -2865,9 +2911,10 @@ async function loadPHist(){
       fob:parseFloat(r.fob_total)||0, freight:parseFloat(r.freight)||0, ins:parseFloat(r.insurance)||0, cif:parseFloat(r.cif_total)||0,
       pack:parseFloat(r.packing)||0, duty:parseFloat(r.duties)||0,
       transport:r.transport||"", incoCode:r.incoterm||"",
-      amtWords:r.amount_words||"", pay:r.payment_clause||"", inco:r.incoterms_clause||"", guar:r.guarantee_clause||"",
+      amtWords:r.amount_words||"", currency:r.currency||"", pay:r.payment_clause||"", inco:r.incoterms_clause||"", guar:r.guarantee_clause||"",
       products:(r.products||[]).map(x=>({hsn:x.hsn||"",desc:x.description||"",note:x.details||"",rate:x.unit_price||"",qty:x.quantity||"",amt:parseFloat(x.amount)||0}))
     }));
+    allPHist.forEach(x=>{x.currency=profCurOf(x);});
     ssSet("je_prof",allPHist); renderPHist(allPHist);
     if(!pEditingOriginalNo) suggestNo("pf-no",allPHist,"profNo");
   } catch(error) { console.warn("Proforma history unavailable:",error.message); }
@@ -2875,7 +2922,9 @@ async function loadPHist(){
 
 function renderPHist(list){
   syncFY("p-fy",allPHist,"date");
-  hFoot("phfoot",list,allPHist,"cif",usd);
+  (function(){const el=document.getElementById("phfoot"); if(!el) return;
+    el.innerHTML='<span>Showing <strong>'+list.length+'</strong> of <strong>'+allPHist.length+
+      '</strong> records</span><span>Total value: <strong>'+curFooter(list,"cif")+"</strong></span>";})();
   const tb=document.getElementById("phbody");
   if(!list.length){
     tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="ei">📂</div><p>No proformas yet.</p></div></td></tr>`;
@@ -2888,7 +2937,7 @@ function renderPHist(list){
       <td><strong>${esc(p.bname)||"—"}</strong></td>
       <td style="font-size:11px">${esc(p.mode)||"—"}</td>
       <td style="font-size:11px">${esc(p.pod)||"—"}</td>
-      <td><strong>${usd(parseFloat(p.cif||0))}</strong></td>
+      <td><strong>${money(parseFloat(p.cif||0),profCurOf(p))}</strong></td>
       <td>
         <button class="vbtn" onclick="viewProf('${escArg(p.profNo)}')">View</button>
         <button class="ebtn" onclick="editProf('${escArg(p.profNo)}')">Edit</button>
@@ -2964,6 +3013,7 @@ function editProf(no){
   // Records saved before the Incoterm split carry only a free-text mode.
   document.getElementById("pf-transport").value=p.transport||transportFromLegacy(p.mode);
   document.getElementById("pf-inco-code").value=p.incoCode||incoFromLegacy(p.mode);
+  document.getElementById("pf-cur").value=profCurOf(p);
   document.getElementById("pf-pol").value=p.pol||"";
   document.getElementById("pf-pod").value=p.pod||"";
   const _pod2=document.getElementById("pf-pod2"); if(_pod2)_pod2.value=p.pod||"";
@@ -3021,7 +3071,7 @@ function openPWhatsApp(d){
     `PI No: ${d.profNo||""}\n`+
     `Date: ${fmtDateExport(d.date)}\n`+
     (d.pod?`Port of Discharge: ${d.pod}\n`:"")+
-    `${incoOf(d.incoCode||incoFromLegacy(d.mode)).total}: ${usd(d.cif)} (USD)\n\n`+
+    `${incoOf(d.incoCode||incoFromLegacy(d.mode)).total}: ${money(d.cif,profCurOf(d))} (${profCurOf(d)})\n\n`+
     `Bank wire details are on the document — we'll share the PDF right after this message.\n\n`+
     `Thank you!\n${CO.name}\n${COX.phone}`
   );
@@ -3030,15 +3080,15 @@ function openPWhatsApp(d){
 function exportProfExcel(){
   const list=filteredProf();
   exportToXlsx(list.map(d=>({
-    "Proforma No":d.profNo,"Date":fmtDateExport(d.date),"Buyer":d.bname,
+    "Proforma No":d.profNo,"Currency":profCurOf(d),"Date":fmtDateExport(d.date),"Buyer":d.bname,
     "Phone":d.bphone,"Email":d.bemail,"Tax ID / VAT":d.btax,
     "Transport":d.transport||transportFromLegacy(d.mode),
     "Incoterm":d.incoCode||incoFromLegacy(d.mode),
     "Shipment Mode":d.mode,"Port of Loading":d.pol,"Port of Discharge":d.pod,
-    "Goods Value ($)":(+d.fob||0).toFixed(2),"Packing ($)":(+d.pack||0).toFixed(2),
-    "Freight ($)":(+d.freight||0).toFixed(2),
-    "Insurance ($)":(+d.ins||0).toFixed(2),"Duties ($)":(+d.duty||0).toFixed(2),
-    "Total Payable ($)":(+d.cif||0).toFixed(2),
+    "Goods Value":(+d.fob||0).toFixed(2),"Packing":(+d.pack||0).toFixed(2),
+    "Freight":(+d.freight||0).toFixed(2),
+    "Insurance":(+d.ins||0).toFixed(2),"Duties":(+d.duty||0).toFixed(2),
+    "Total Payable":(+d.cif||0).toFixed(2),
     "Total Basis":incoOf(d.incoCode||incoFromLegacy(d.mode)).total,
     "Amount in Words":d.amtWords
   })),"Proformas","jigar-proformas-"+todayLocal()+".xlsx");
@@ -3046,6 +3096,8 @@ function exportProfExcel(){
 
 // ── Print layout (mirrors the exported proforma document design) ──
 function buildProfHTML(d){
+  const cur=profCurOf(d), sym=curSym(cur);
+  const usd=n=>money(n,cur); // local override: every amount below follows the proforma currency
   const T=incoOf(d.incoCode||incoFromLegacy(d.mode));
   const modeLine=d.mode||shipModeLabel(d.transport,T.code);
   const pack=parseFloat(d.pack)||0;
@@ -3175,7 +3227,7 @@ function buildProfHTML(d){
     <thead><tr>
       <th class="c-item">Item</th><th class="c-hsn">Export HSN</th>
       <th class="c-desc">Description of Industrial Mechanical Equipment</th>
-      <th class="c-rate">Unit Price ($)</th><th class="c-qty">Qty</th><th class="c-amt">Amount ($)</th>
+      <th class="c-rate">Unit Price (${sym})</th><th class="c-qty">Qty</th><th class="c-amt">Amount (${sym})</th>
     </tr></thead>
     <tbody>${prods}</tbody>
   </table>
@@ -3189,7 +3241,7 @@ function buildProfHTML(d){
     <div class="sum">
       <div class="srow"><span>${goodsLabel}</span><b>${usd(d.fob)}</b></div>
       ${costRows}
-      <div class="cifbar"><span>${esc(T.total)} (USD)</span><span>${usd(d.cif)}</span></div>
+      <div class="cifbar"><span>${esc(T.total)} (${cur})</span><span>${usd(d.cif)}</span></div>
       ${exclNote}
     </div>
   </div>
@@ -3204,7 +3256,7 @@ function buildProfHTML(d){
     <div class="br"><span class="bl">Dealer Code:</span><span class="bv">${COX.bankDealer}</span></div>
     <div class="br"><span class="bl">AD Code:</span><span class="bv">${COX.bankAd}</span></div>
   </div>
-  <div class="wordsbar"><b>Amount In Words:</b> ${esc(d.amtWords||usdToWords(d.cif||0))}</div>
+  <div class="wordsbar"><b>Amount In Words:</b> ${esc(d.amtWords||moneyWords(d.cif||0,cur))}</div>
   <div class="notif">--- NOTIFICATION: THIS PROFORMA SERVES AS A BINDING SETTLEMENT BASE FOR BANK WIRE ROUTING ---</div>
   <div class="sign">
     <div class="sc"><div class="line">Overseas Buyer Acceptance Sanction</div><div class="cap">Authorized Signature &amp; Corporate Seal with Date</div></div>
