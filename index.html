@@ -510,6 +510,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
     <div class="side-menu-section">Workspace</div>
     <button class="tabBtn active" id="tab-orders" onclick="switchTab('orders')">📒 <span>Order Book</span></button>
     <button class="tabBtn" id="tab-customers" onclick="switchTab('customers')">👥 <span>Customer Directory</span></button>
+    <button class="tabBtn" id="tab-products" onclick="switchTab('products')">📦 <span>Product Directory</span></button>
     <div class="side-menu-section">Create documents</div>
     <button class="tabBtn owner-only" id="tab-gstnew" onclick="switchTab('gstnew')">＋ <span>New GST Invoice</span></button>
     <button class="tabBtn owner-only" id="tab-new" onclick="switchTab('new')">🚚 <span>New Transport Invoice</span></button>
@@ -1046,6 +1047,22 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
+     PERMANENT PRODUCT MASTER
+     ═══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-products">
+  <div class="ob-wrap">
+    <div class="ob-head">
+      <div><div class="ob-title">📦 Product Directory</div><div class="ob-subtitle">Save products once, then select them in transport invoices, GST invoices, orders, quotations and proformas.</div></div>
+      <div class="ob-actions"><button class="btn btn-o btn-sm" onclick="loadProducts()">↻ Refresh</button><button class="btn btn-s btn-sm owner-only" onclick="rebuildProductsFromDocuments()">♻ Rebuild from Documents</button><button class="btn btn-o btn-sm" onclick="exportProductsExcel()">⬇ Export Listed Excel</button><button class="btn btn-o btn-sm" onclick="exportAllProductsExcel()">⬇ Export All Excel</button><button class="btn btn-p owner-only" onclick="openProductModal()">＋ New Product</button></div>
+    </div>
+    <div class="cm-stats"><div><span>Total products</span><strong id="pm-total">0</strong></div><div><span>With HSN / SAC</span><strong id="pm-hsn-count">0</strong></div><div><span>Only in documents</span><strong id="pm-derived-count">0</strong></div></div>
+    <div class="ob-toolbar"><input class="hsearch" id="pm-search" placeholder="Search product, details, HSN, make or document number..." oninput="renderProducts()"><button class="fclr" onclick="document.getElementById('pm-search').value='';renderProducts()">✕ Clear</button></div>
+    <div class="htw" style="overflow-x:auto"><table class="htable cm-table"><thead><tr><th>Product / Details</th><th>HSN / SAC</th><th>UOM</th><th>Default Rate</th><th>GST %</th><th>Used In</th><th>Actions</th></tr></thead><tbody id="pm-body"></tbody></table><div class="hfoot" id="pm-foot"></div></div>
+    <div class="noteBox" style="margin-top:14px"><b>Recovery and deletion protection.</b> Rebuild from Documents saves products still found in orders, GST/transport invoices, quotations and proformas. It cannot recreate a product whose only document was already deleted and has no surviving backup. Future transport deletions archive products before deleting invoices.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      FORMAL GST TAX INVOICE
      ═══════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-gstnew">
@@ -1323,6 +1340,23 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
   </div>
 </div>
 
+<!-- PRODUCT ENTRY / EDIT MODAL -->
+<div class="xoverlay" id="productModal">
+  <div class="xbox small">
+    <div class="xbar"><span id="pm-modal-title">Add New Product<span class="xsubhead">Saved defaults are reused in every document form.</span></span><button class="xclose" onclick="closeProductModal()">✕ Close</button></div>
+    <div class="xbody">
+      <input type="hidden" id="pm-id">
+      <div class="fr s"><div class="field"><label>Product Name*</label><input id="pm-name" placeholder="Type the full product name once"></div></div>
+      <div class="fr s"><div class="field"><label>Details / Specification</label><textarea id="pm-details" style="min-height:65px" placeholder="Optional description, size or specification"></textarea></div></div>
+      <div class="fr"><div class="field"><label>Make / Brand</label><input id="pm-make" placeholder="Optional manufacturer"></div><div class="field"><label>HSN / SAC</label><input id="pm-hsn" placeholder="e.g. 8413"></div></div>
+      <div class="fr"><div class="field"><label>UOM</label><select id="pm-uom"><option>NOS</option><option>PCS</option><option>SET</option><option>KG</option><option>MTR</option><option>BOX</option><option>LTR</option></select></div><div class="field"><label>Default GST %</label><select id="pm-gst"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option><option value="28">28%</option></select></div></div>
+      <div class="fr s"><div class="field"><label>Default Rate ₹ <span class="opt">(optional — editable on each document)</span></label><input id="pm-rate" type="number" min="0" step="any" placeholder="0.00"></div></div>
+      <div class="fr s"><div class="field"><label>Notes</label><textarea id="pm-notes" style="min-height:55px" placeholder="Optional office notes"></textarea></div></div>
+    </div>
+    <div class="xfoot"><button class="btn btn-o btn-sm owner-only" id="pm-delete" style="display:none;color:var(--red)" onclick="deleteProduct(document.getElementById('pm-id').value)">🗑 Delete Product</button><div class="xf-right"><button class="btn btn-o" onclick="closeProductModal()">Cancel</button><button class="btn btn-p owner-only" id="pm-save" onclick="saveProduct()">💾 Save Product</button></div></div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════
      GST PRINT / SAVE AS PDF DIALOG
      ═══════════════════════════════════════════════════════════ -->
@@ -1579,7 +1613,7 @@ function applyPrefill() {
 // TABS
 // ═══════════════════════════════════════════════════
 function switchTab(t) {
-  ["orders","customers","gstnew","gsthist","new","history","quot","qhist","prof","phist","settings"].forEach(x=>{
+  ["orders","customers","products","gstnew","gsthist","new","history","quot","qhist","prof","phist","settings"].forEach(x=>{
     document.getElementById("panel-"+x).classList.remove("active");
     document.getElementById("tab-"+x).classList.remove("active");
   });
@@ -1591,6 +1625,7 @@ function switchTab(t) {
   if(t==="phist") loadPHist();
   if(t==="orders") loadOrders();
   if(t==="customers") loadCustomers();
+  if(t==="products") loadProducts();
   if(t==="gsthist") loadGstHist();
   if(t==="prof") refreshPFProductList();
   if(t==="settings") fillSettingsForm();
@@ -3989,6 +4024,7 @@ var activeTransportOrderNo="";
 var allOrders=[];
 var allGstHist=[];
 var allCustomers=[];
+var allProducts=[];
 var upgradeCustomerDirectory={};
 var upgradeProductDirectory={};
 var gstEditingOriginalNo=null;
@@ -4139,19 +4175,19 @@ function applyRolePermissions(){
   document.querySelectorAll(".owner-only,[data-owner-only]").forEach(el=>{el.classList.toggle("owner-hidden",!owner);});
   // Mark controls in the original modules without changing their print code.
   // View, history, search, export and print actions remain available to staff.
-  const mutation= /\b(?:saveInv|editInv|delInv|saveQuot|editQuot|delQuot|saveProf|editProf|delProf|clearForm|clearQForm|clearPForm|addRow|remRow|addQRow|remQRow|addPRow|remPRow|saveGst|editGst|delGst|saveOrderFromModal|deleteOrder|changeOrderStatus|openChoiceModal|openTransportFromOrder|openGstFromOrder|saveSettings|resetSettings|saveCustomer|deleteCustomer|deleteSelectedTransport|deleteAllTransport)\s*\(/;
+  const mutation= /\b(?:saveInv|editInv|delInv|saveQuot|editQuot|delQuot|saveProf|editProf|delProf|clearForm|clearQForm|clearPForm|addRow|remRow|addQRow|remQRow|addPRow|remPRow|saveGst|editGst|delGst|saveOrderFromModal|deleteOrder|changeOrderStatus|openChoiceModal|openTransportFromOrder|openGstFromOrder|saveSettings|resetSettings|saveCustomer|deleteCustomer|deleteSelectedTransport|deleteAllTransport|saveProduct|deleteProduct|rebuildProductsFromDocuments)\s*\(/;
   document.querySelectorAll("[onclick]").forEach(el=>{
     const code=el.getAttribute("onclick")||"";
     if(mutation.test(code)||/\bopenOrderModal\s*\(\s*\)/.test(code))el.classList.add("owner-action");
   });
-  document.querySelectorAll("#orderModal input,#orderModal select,#orderModal textarea,#customerModal input,#customerModal select,#customerModal textarea").forEach(el=>{el.disabled=!owner;});
+  document.querySelectorAll("#orderModal input,#orderModal select,#orderModal textarea,#customerModal input,#customerModal select,#customerModal textarea,#productModal input,#productModal select,#productModal textarea").forEach(el=>{el.disabled=!owner;});
   ["#panel-new","#panel-quot","#panel-prof","#panel-gstnew","#panel-settings"].forEach(sel=>{
     document.querySelectorAll(sel+" input,"+sel+" select,"+sel+" textarea").forEach(el=>{el.disabled=!owner;});
   });
   document.querySelectorAll(".ob-status-select").forEach(el=>{el.disabled=!owner;});
   // Staff may open an existing order/customer to inspect it, but not its
   // item editor or save/delete buttons. Close/cancel remains available.
-  document.querySelectorAll("#orderModal button,#customerModal button").forEach(el=>{
+  document.querySelectorAll("#orderModal button,#customerModal button,#productModal button").forEach(el=>{
     if(!el.classList.contains("xclose")&&!el.classList.contains("owner-only")&&!/close|Cancel/i.test(el.textContent))el.disabled=!owner;
   });
   if(!owner){const active=document.querySelector(".panel.active");if(active&&["panel-gstnew","panel-new","panel-quot","panel-prof","panel-settings"].includes(active.id))switchTab("orders");}
@@ -4184,10 +4220,10 @@ function demoApi(path,options={}){
     if(method==="POST"){localSet(key,{company:body.value||body.data||APP_SETTINGS});return Promise.resolve({status:"ok"});}
   }
   let rows=localGet(key,[]);
-  const idKey=resource==="customers"?"id":resource==="orders"?"orderNo":resource==="gst-invoices"?"invoiceNo":resource==="invoices"?"invoiceNo":resource==="quotations"?"quotNo":"profNo";
+  const idKey=resource==="customers"||resource==="products"?"id":resource==="orders"?"orderNo":resource==="gst-invoices"?"invoiceNo":resource==="invoices"?"invoiceNo":resource==="quotations"?"quotNo":"profNo";
   if(method==="GET")return Promise.resolve({rows:rows.map(r=>demoResourceRow(resource,r))});
   if(method==="POST"){
-    const d=body.data||body;if(resource==="customers"&&!d.id)d.id="cust-"+Date.now();
+    const d=body.data||body;if((resource==="customers"||resource==="products")&&!d.id)d.id=resource+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
     const id=String(d[idKey]||"");
     const idx=rows.findIndex(x=>String(x[idKey])===id);if(idx>=0)rows[idx]=cloneObj(d);else rows.unshift(cloneObj(d));
     localSet(key,rows);return Promise.resolve({status:"ok",row:demoResourceRow(resource,d)});
@@ -4201,6 +4237,7 @@ function demoApi(path,options={}){
 }
 function demoResourceRow(resource,d){
   if(resource==="customers")return Object.assign({},d,{customer_name:d.name,data:d});
+  if(resource==="products")return Object.assign({},d,{product_name:d.name,data:d});
   if(resource==="orders")return Object.assign({},d,{order_no:d.orderNo,order_date:d.orderDate,customer_name:d.clientName,grand_total:d.subtotal,data:d});
   if(resource==="gst-invoices")return Object.assign({},d,{invoice_no:d.invoiceNo,invoice_date:d.invoiceDate,customer_name:d.clientName,grand_total:d.grand,data:d});
   if(resource==="invoices")return Object.assign({},d,{created_at:d.timestamp,invoice_no:d.invoiceNo,invoice_date:d.invoiceDate,
@@ -4536,16 +4573,22 @@ function rebuildUpgradeDirectories(){
   const tl=document.getElementById("g-transport-list");if(tl)tl.innerHTML=Object.keys(transports).map(t=>`<option value="${esc(t)}">`).join("");
 
   const addProduct=p=>{
-    const desc=String(p.desc||"").trim();if(!desc)return;const key=desc.toLowerCase();
+    const desc=String(p.desc||p.name||"").trim();if(!desc)return;const key=desc.toLowerCase();
     if(!upgradeProductDirectory[key])upgradeProductDirectory[key]={desc:desc};
     const d=upgradeProductDirectory[key];
-    ["details","hsn","uom","rate","gst"].forEach(k=>{if(p[k]!==undefined&&p[k]!==""&&!d[k])d[k]=p[k];});
+    ["details","make","hsn","uom","rate","gst","notes","source","legacyRefs"].forEach(k=>{if(p[k]!==undefined&&p[k]!==""&&(d[k]===undefined||d[k]===null||d[k]===""))d[k]=p[k];});
   };
+  // The permanent Product Master is authoritative; surviving documents add
+  // missing products/details without replacing master values.
+  allProducts.forEach(addProduct);
   allOrders.forEach(o=>(o.products||[]).forEach(addProduct));
   allGstHist.forEach(d=>(d.products||[]).forEach(addProduct));
   (allHist||[]).forEach(d=>(d.products||[]).forEach(addProduct));
+  (typeof allQHist!=="undefined"?allQHist:[]).forEach(q=>(q.products||[]).forEach(addProduct));
+  (typeof allPHist!=="undefined"?allPHist:[]).forEach(p=>(p.products||[]).forEach(item=>addProduct(Object.assign({},item,{details:item.details||item.note}))));
   const productHTML=Object.values(upgradeProductDirectory).map(p=>`<option value="${esc(p.desc)}">`).join("");
-  ["o-product-list","g-product-list"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=productHTML;});
+  ["product-list","o-product-list","g-product-list","q-product-list","pf-product-list"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=productHTML;});
+  if(typeof productDirectory!=="undefined")Object.values(upgradeProductDirectory).forEach(p=>{const key=p.desc.toLowerCase();productDirectory[key]=Object.assign({},productDirectory[key]||{},p);});
 }
 function fillIfEmpty(id,value){const el=document.getElementById(id);if(el&&value&&!el.value.trim())el.value=value;}
 function autofillOrderCustomer(){
@@ -4813,6 +4856,159 @@ function exportOrdersExcel(){
     "Expected Dispatch":o.expectedDate?fmtDate(o.expectedDate):"","Transport":o.transport,"Destination":o.destination,
     "Documents":(o.documents||[]).map(d=>d.type+": "+d.number).join(" ; "),"Notes":o.notes})),"Order Book","jigar-order-book-"+todayLocal()+".xlsx");
 }
+
+
+// ═══ PERMANENT PRODUCT MASTER + DOCUMENT RECOVERY ═══
+var activeProductRecord=null;
+var productRebuildRunning=false;
+function productKey(value){return String(value||"").trim().toLowerCase();}
+function productCacheKey(){return DEMO_MODE?"je_demo_products_cache":"je_products_cache";}
+function productLegacyRefs(p){return Array.isArray(p&&p.legacyRefs)?p.legacyRefs:(p&&p.legacyRefs?[p.legacyRefs]:[]);}
+function normalizeProduct(r){
+  const d=r&&r.data?Object.assign({},r.data):Object.assign({},r||{});
+  return Object.assign({},d,{
+    id:d.id||r.id||"",name:d.name||r.product_name||"",details:d.details||"",make:d.make||"",notes:d.notes||"",
+    hsn:d.hsn||r.hsn||"",uom:d.uom||r.uom||"NOS",rate:d.rate!==undefined?d.rate:(r.rate!==undefined?r.rate:""),
+    gst:d.gst!==undefined&&d.gst!==""?d.gst:(r.gst!==undefined?r.gst:18),source:d.source||r.source||"",
+    legacyRefs:productLegacyRefs(d),createdAt:d.createdAt||r.created_at||"",updatedAt:d.updatedAt||r.updated_at||""
+  });
+}
+async function loadProducts(){
+  const cached=localGet(productCacheKey(),[]);if(cached.length){allProducts=cached.map(normalizeProduct);renderProducts();rebuildUpgradeDirectories();}
+  try{const res=await apiFetch("/api/products");allProducts=(res.rows||[]).map(normalizeProduct);allProducts.sort((a,b)=>a.name.localeCompare(b.name));localSet(productCacheKey(),allProducts);renderProducts();rebuildUpgradeDirectories();}
+  catch(e){console.warn("Product master unavailable:",e.message);renderProducts();}
+}
+function upsertProductLocal(p){
+  const idx=allProducts.findIndex(x=>(p.id&&String(x.id)===String(p.id))||(!p.id&&productKey(x.name)===productKey(p.name)));
+  if(idx>=0)allProducts[idx]=p;else allProducts.push(p);allProducts.sort((a,b)=>a.name.localeCompare(b.name));
+  localSet(productCacheKey(),allProducts);renderProducts();rebuildUpgradeDirectories();
+}
+async function saveProductRecord(p){const res=await apiFetch("/api/products",{method:"POST",body:{data:p}});const saved=res.row?normalizeProduct(res.row):p;upsertProductLocal(saved);return saved;}
+function productDisplayList(){
+  const map=new Map();allProducts.forEach(p=>map.set(productKey(p.name),p));
+  Object.values(upgradeProductDirectory).forEach(p=>{
+    const key=productKey(p.desc);if(!key||map.has(key))return;
+    map.set(key,Object.assign({},p,{id:"derived:"+key,name:p.desc,derived:true,source:"Existing documents"}));
+  });
+  return Array.from(map.values()).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+}
+function findProduct(id){return allProducts.find(p=>String(p.id)===String(id))||productDisplayList().find(p=>String(p.id)===String(id));}
+function productDocuments(){
+  return [
+    ...(allOrders||[]).map(d=>({doc:d,kind:"orders"})),
+    ...(allGstHist||[]).map(d=>({doc:d,kind:"gst"})),
+    ...((typeof allHist!=="undefined"?allHist:[])).map(d=>({doc:d,kind:"transport"})),
+    ...((typeof allQHist!=="undefined"?allQHist:[])).map(d=>({doc:d,kind:"quotations"})),
+    ...((typeof allPHist!=="undefined"?allPHist:[])).map(d=>({doc:d,kind:"proformas"}))
+  ];
+}
+function productUsage(p){
+  const key=productKey(p&&p.name||p&&p.desc),result={orders:0,gst:0,transport:0,quotations:0,proformas:0,total:0,refs:[]};
+  productDocuments().forEach(({doc,kind})=>{
+    if(!(doc.products||[]).some(x=>productKey(x.desc)===key))return;
+    result[kind]++;result.total++;const no=doc.orderNo||doc.invoiceNo||doc.quotNo||doc.profNo;if(no)result.refs.push(String(no));
+  });
+  return result;
+}
+function filteredProducts(directory){
+  const q=(document.getElementById("pm-search")?.value||"").trim().toLowerCase(),list=directory||productDisplayList();
+  return list.filter(p=>{const u=productUsage(p);return !q||[p.name,p.details,p.make,p.hsn,p.uom,p.rate,p.gst,p.notes,p.source,productLegacyRefs(p).join(" "),u.refs.join(" ")].join(" ").toLowerCase().includes(q);});
+}
+function renderProducts(){
+  const body=document.getElementById("pm-body");if(!body)return;const directory=productDisplayList(),list=filteredProducts(directory);
+  body.innerHTML=list.length?list.map(p=>{
+    const u=productUsage(p);
+    return `<tr><td><strong>${esc(p.name)}</strong>${p.derived?'<span class="cm-derived">Existing documents</span>':""}${p.details?`<br><span class="xmuted">${esc(p.details)}</span>`:""}${p.make?`<br><span class="xmuted">Make: ${esc(p.make)}</span>`:""}</td><td>${esc(p.hsn)||"—"}</td><td>${esc(p.uom)||"NOS"}</td><td>${p.rate!==""&&p.rate!==undefined?inr(p.rate):"—"}</td><td>${p.gst===undefined||p.gst===""?"18":esc(p.gst)}%</td><td><button class="vbtn" onclick="openProductModal('${escArg(p.id)}')">${u.total} record${u.total===1?"":"s"}</button><br><span class="xmuted">${u.orders} orders · ${u.gst+u.transport} invoices</span></td><td><div class="hbtns"><button class="vbtn" onclick="openProductModal('${escArg(p.id)}')">View</button><button class="ebtn owner-only" onclick="openProductModal('${escArg(p.id)}')">Edit</button>${!p.derived?`<button class="dbtn owner-only" onclick="deleteProduct('${escArg(p.id)}')">Delete</button>`:""}</div></td></tr>`;
+  }).join(""):'<tr><td colspan="7"><div class="empty"><div class="ei">📦</div><p>No products match this search. The owner can add a product or rebuild from remaining documents.</p></div></td></tr>';
+  const foot=document.getElementById("pm-foot");if(foot)foot.innerHTML=`<span>Showing <strong>${list.length}</strong> of <strong>${directory.length}</strong> products</span><span>Select a product name in any document form to autofill its saved defaults</span>`;
+  const total=document.getElementById("pm-total");if(total)total.textContent=directory.length;
+  const hsn=document.getElementById("pm-hsn-count");if(hsn)hsn.textContent=directory.filter(p=>p.hsn).length;
+  const derived=document.getElementById("pm-derived-count");if(derived)derived.textContent=directory.filter(p=>p.derived).length;
+  applyRolePermissions();
+}
+function openProductModal(id){
+  const p=id?findProduct(id):null;if(id&&!p){showToast("Product record not found.","error");return;}if(!p&&!ownerRequired())return;
+  activeProductRecord=p;document.getElementById("pm-modal-title").textContent=p?(userIsOwner()?(p.derived?"Review & Save Product":"Edit Product"):"View Product"):"Add New Product";
+  document.getElementById("pm-id").value=p&&!p.derived?p.id:"";document.getElementById("pm-name").value=p?p.name:"";
+  document.getElementById("pm-details").value=p?p.details||"":"";document.getElementById("pm-make").value=p?p.make||"":"";document.getElementById("pm-hsn").value=p?p.hsn||"":"";
+  document.getElementById("pm-uom").value=p?p.uom||"NOS":"NOS";document.getElementById("pm-rate").value=p&&p.rate!==undefined?p.rate:"";document.getElementById("pm-gst").value=p&&p.gst!==undefined?p.gst:"18";
+  document.getElementById("pm-notes").value=p?p.notes||"":"";document.getElementById("pm-delete").style.display=p&&!p.derived&&userIsOwner()?"inline-block":"none";
+  document.getElementById("productModal").classList.add("open");applyRolePermissions();
+}
+function closeProductModal(){document.getElementById("productModal").classList.remove("open");activeProductRecord=null;}
+function collectProduct(){
+  const v=id=>document.getElementById(id).value.trim(),existing=findProduct(v("pm-id"))||activeProductRecord||{};
+  return Object.assign({},existing,{id:v("pm-id"),derived:false,source:existing.derived?"Product Master":existing.source,name:v("pm-name"),details:v("pm-details"),make:v("pm-make"),hsn:v("pm-hsn"),uom:document.getElementById("pm-uom").value||"NOS",rate:v("pm-rate"),gst:v("pm-gst"),notes:v("pm-notes")});
+}
+async function saveProduct(){
+  if(!ownerRequired())return;const p=collectProduct();
+  if(!p.name){showToast("Please enter the product name.","error");return;}
+  if(p.gst===""||num(p.gst)<0||num(p.gst)>100){showToast("GST% must be between 0 and 100.","error");return;}
+  if(p.rate!==""&&num(p.rate)<0){showToast("Product rate cannot be negative.","error");return;}
+  if(allProducts.some(x=>productKey(x.name)===productKey(p.name)&&String(x.id)!==String(p.id))){showToast("A product with this name already exists.","error");return;}
+  setLoading(true,"Saving product...");try{await saveProductRecord(p);closeProductModal();showToast("Product saved. It is now available in all product suggestions.","success");}
+  catch(e){showToast("Product save failed: "+e.message,"error");}finally{setLoading(false);}
+}
+async function deleteProduct(id){
+  if(!ownerRequired())return;const p=findProduct(id);if(!p)return;
+  if(p.derived){showToast("This product comes from existing documents. Review and save it to Product Master first; original documents will not be deleted.","info");return;}
+  if(!confirm("Delete "+p.name+" from Product Master? Existing invoices, orders and quotations will not be deleted."))return;
+  setLoading(true,"Deleting product...");try{await apiFetch("/api/products?id="+encodeURIComponent(id),{method:"DELETE",body:{id:id}});allProducts=allProducts.filter(x=>String(x.id)!==String(id));localSet(productCacheKey(),allProducts);renderProducts();rebuildUpgradeDirectories();closeProductModal();showToast("Product deleted from the master.","success");}
+  catch(e){showToast("Product delete failed: "+e.message,"error");}finally{setLoading(false);}
+}
+function exportProductsExcel(list,kind){
+  const rows=list||filteredProducts();exportToXlsx(rows.map(p=>({"Product Name":p.name,"Details / Specification":p.details,"Make":p.make,"HSN / SAC":p.hsn,"UOM":p.uom,"Default Rate":p.rate,"GST %":p.gst,"Notes":p.notes,"Source":p.source,"Legacy References":productLegacyRefs(p).join(", ")})),"Products","jigar-products-"+(kind?kind+"-":"")+todayLocal()+".xlsx");
+}
+function exportAllProductsExcel(){exportProductsExcel(productDisplayList(),"all");}
+
+function productArchiveRecord(group,existing){
+  const p=existing?cloneObj(existing):{id:"",name:group.name,uom:"",gst:"",rate:"",legacyRefs:[],source:""};
+  p.id=existing&&existing.id?existing.id:"";p.name=existing&&existing.name?existing.name:group.name;p.derived=false;p.legacyRefs=productLegacyRefs(p).slice();
+  const fill=(key,value)=>{if(value===undefined||value===null||!String(value).trim())return;if(p[key]===undefined||p[key]===null||!String(p[key]).trim())p[key]=value;};
+  group.entries.forEach(({doc,item})=>{
+    fill("details",item.details||item.note);fill("make",item.make);fill("hsn",item.hsn);fill("uom",item.uom);fill("rate",item.rate);fill("gst",item.gst);
+    const no=doc.orderNo||doc.invoiceNo||doc.quotNo||doc.profNo;if(no&&!p.legacyRefs.some(x=>String(x)===String(no)))p.legacyRefs.push(String(no));
+  });
+  if(!p.uom)p.uom="NOS";if(p.gst===""||p.gst===undefined)p.gst=18;if(!p.source)p.source="Document archive";p.lastDocumentArchiveAt=new Date().toISOString();return p;
+}
+async function archiveProductsFromDocuments(documents){
+  if(!ownerRequired())throw new Error("Only the owner can archive products.");
+  const groups=new Map();
+  (documents||[]).forEach(doc=>(doc.products||[]).forEach(item=>{
+    const name=String(item.desc||"").trim();if(!name)return;const key=productKey(name);if(!groups.has(key))groups.set(key,{name:name,entries:[]});groups.get(key).entries.push({doc:doc,item:item});
+  }));
+  const saved=[];for(const group of groups.values()){
+    const existing=allProducts.find(p=>productKey(p.name)===productKey(group.name));
+    const row=await saveProductRecord(productArchiveRecord(group,existing));if(!row||!row.id)throw new Error("Product Master did not confirm saving "+group.name+".");saved.push(row);
+  }
+  return {saved:saved,count:saved.length};
+}
+async function rebuildProductsFromDocuments(){
+  if(!ownerRequired())return;if(productRebuildRunning){showToast("Product rebuild is already running.","error");return;}
+  const docs=productDocuments().map(x=>x.doc);if(!docs.length){showToast("No remaining documents contain products to recover.","error");return;}
+  productRebuildRunning=true;setLoading(true,"Recovering products from remaining documents...");
+  try{const result=await archiveProductsFromDocuments(docs);renderProducts();rebuildUpgradeDirectories();showToast(result.count+" product"+(result.count===1?"":"s")+" saved from remaining documents. Existing master fields were preserved.","success");return result;}
+  catch(e){showToast("Product rebuild failed: "+e.message,"error");throw e;}
+  finally{productRebuildRunning=false;setLoading(false);}
+}
+
+// Keep the original transport/quotation/proforma suggestion directories in
+// sync with the permanent master after their own save/delete refreshes.
+var _productOriginalRefresh=window.refreshAllDirectories;
+window.refreshAllDirectories=function(){const result=_productOriginalRefresh.apply(this,arguments);rebuildUpgradeDirectories();return result;};
+function suggestedProduct(value){return upgradeProductDirectory[productKey(value)]||null;}
+window.autofillProduct=function(n){
+  const p=suggestedProduct(document.getElementById("pd-"+n)?.value);if(!p)return;
+  fillIfEmpty("ph-"+n,p.hsn);fillIfEmpty("pr2-"+n,p.rate);const g=document.getElementById("pg-"+n);if(g&&p.gst!==undefined)g.value=String(p.gst);recalc();
+};
+window.autofillQProduct=function(n){
+  const p=suggestedProduct(document.getElementById("qd-"+n)?.value);if(!p)return;
+  fillIfEmpty("qh-"+n,p.hsn);fillIfEmpty("qr2-"+n,p.rate);fillIfEmpty("qm-"+n,p.make);const g=document.getElementById("qg-"+n);if(g&&p.gst!==undefined)g.value=String(p.gst);recalcQ();
+};
+window.autofillPProduct=function(n){
+  const p=suggestedProduct(document.getElementById("pfd-"+n)?.value);if(!p)return;
+  fillIfEmpty("pfh-"+n,p.hsn);fillIfEmpty("pfr2-"+n,p.rate);fillIfEmpty("pfn-"+n,p.details);recalcP();
+};
 
 
 // ═══ GST TYPE, PLACE OF SUPPLY & TAX ENGINE ═══
@@ -5304,22 +5500,23 @@ async function deleteTransportBatch(invoices){
   if(transportBulkRunning||_saving){showToast("Please wait — another save/delete is in progress.","error");return;}
   const list=(invoices||[]).filter((inv,index,arr)=>inv&&inv.invoiceNo&&arr.findIndex(x=>String(x.invoiceNo)===String(inv.invoiceNo))===index);
   if(!list.length){showToast("There are no transport invoices to delete.","error");return;}
-  transportBulkRunning=true;_saving=true;setLoading(true,"Saving customer data before deleting invoices...");
-  let deleted=0,failed=[],archive=null;
+  transportBulkRunning=true;_saving=true;setLoading(true,"Saving customer and product data before deleting invoices...");
+  let deleted=0,failed=[],archive=null,productArchive=null;
   try{
     try{
       // This phase must complete successfully before any DELETE request below.
       archive=await archiveCustomersForTransport(list);
+      productArchive=await archiveProductsFromDocuments(list);
     }catch(e){
-      showToast("Delete cancelled: customer archiving failed. No transport invoices were deleted. "+e.message,"error");return;
+      showToast("Delete cancelled: customer/product archiving failed. No transport invoices were deleted. "+e.message,"error");return;
     }
     for(const inv of list){
-      setLoading(true,"Customer data saved. Deleting invoice "+(deleted+failed.length+1)+" of "+list.length+"...");
+      setLoading(true,"Customer and product data saved. Deleting invoice "+(deleted+failed.length+1)+" of "+list.length+"...");
       try{await deleteTransportInvoiceRecord(inv.invoiceNo,true);deleted++;}
       catch(e){failed.push(String(inv.invoiceNo)+": "+e.message);}
     }
     renderHist(filteredInv());refreshAllDirectories();rebuildUpgradeDirectories();renderCustomers();
-    let msg=deleted+" of "+list.length+" transport invoice"+(list.length===1?"":"s")+" deleted. Customer data is saved in Customer Master.";
+    let msg=deleted+" of "+list.length+" transport invoice"+(list.length===1?"":"s")+" deleted. Customer and product data are saved in their masters."+(productArchive?" "+productArchive.count+" product record"+(productArchive.count===1?"":"s")+" confirmed.":"");
     if(archive&&archive.withoutCustomer)msg+=" "+archive.withoutCustomer+" invoice"+(archive.withoutCustomer===1?"":"s")+" had no customer name.";
     if(failed.length)showToast(msg+" Not deleted: "+failed.join(" | "),"error");
     else showToast(msg,"success");
@@ -5331,7 +5528,7 @@ async function deleteTransportBatch(invoices){
 // layout continue to use the uploaded application's original functions.
 window.delInv=async function(no){
   if(!ownerRequired())return;const inv=findInv(no);if(!inv){showToast("Invoice not found.","error");return;}
-  if(!confirm("Delete Invoice "+no+" permanently?\n\nCustomer details will be saved in Customer Master first. Export All Excel first if you also need an invoice backup."))return;
+  if(!confirm("Delete Invoice "+no+" permanently?\n\nCustomer and product details will be saved in their masters first. Export All Excel first if you also need an invoice backup."))return;
   await deleteTransportBatch([inv]);
 };
 function toggleTransportSelection(no,checked){
@@ -5350,7 +5547,7 @@ function deleteSelectedTransport(){
 }
 function deleteAllTransport(){
   if(!ownerRequired())return;const list=allHist.slice();if(!list.length){showToast("There are no transport invoices to delete.","error");return;}
-  const typed=window.prompt("DELETE ALL TRANSPORT INVOICES\n\nThis permanently deletes "+list.length+" invoices after archiving their customers. Orders and Customer Master records remain.\n\nType DELETE ALL to continue:","");
+  const typed=window.prompt("DELETE ALL TRANSPORT INVOICES\n\nThis permanently deletes "+list.length+" invoices after archiving their customers and products. Orders, Customer Master and Product Master records remain.\n\nType DELETE ALL to continue:","");
   if(typed===null)return;if(String(typed).trim()!=="DELETE ALL"){showToast("Delete All cancelled. Type DELETE ALL exactly to confirm.","error");return;}
   if(!confirm("Final confirmation: archive customers and permanently delete ALL "+list.length+" transport invoices?"))return;
   return deleteTransportBatch(list);
@@ -5410,7 +5607,7 @@ function installTransportMaintenance(){
       '<button class="pbtn" onclick="exportSelectedTransportExcel()">⬇ Export Selected Excel</button>'+
       '<button class="dbtn" onclick="deleteSelectedTransport()">Delete Selected</button>'+
       '<button class="dbtn transport-delete-all" onclick="deleteAllTransport()">Delete All</button></div></div>'+
-      '<div class="transport-bulk-note"><b>Customer data is protected:</b> every customer is saved/updated in Customer Master before any selected invoice is deleted. If archiving fails, deletion stops. Use <b>Export All Excel</b> before deletion if you also want a separate invoice backup.</div>';
+      '<div class="transport-bulk-note"><b>Customer and product data are protected:</b> every named customer and product is saved/updated in its master before any selected invoice is deleted. If archiving fails, deletion stops. Use <b>Export All Excel</b> before deletion if you also want a separate invoice backup.</div>';
     const table=panel.querySelector(".htw");table.parentNode.insertBefore(bar,table);
   }
   const head=panel.querySelector("thead tr");
@@ -5431,7 +5628,7 @@ function installTransportMaintenance(){
 
 // ═══ APP SHELL INTEGRATION ═══
 const _upgradeLoadHist=loadHist;
-loadHist=async function(){const result=await _upgradeLoadHist();rebuildUpgradeDirectories();if(document.getElementById("tab-customers")?.classList.contains("active"))renderCustomers();return result;};
+loadHist=async function(){const result=await _upgradeLoadHist();rebuildUpgradeDirectories();if(document.getElementById("tab-customers")?.classList.contains("active"))renderCustomers();if(document.getElementById("tab-products")?.classList.contains("active"))renderProducts();return result;};
 function installLegacyRoleGuards(){
   if(window._legacyRoleGuardsInstalled)return;window._legacyRoleGuardsInstalled=true;
   ["saveInv","editInv","delInv","saveQuot","editQuot","delQuot","saveProf","editProf","delProf"].forEach(name=>{
@@ -5457,10 +5654,10 @@ async function initUpgrade(){
   fillUpgradeStateSelects();
   if(!UPGRADE_READY){
     UPGRADE_READY=true;
-    [["orderModal","closeOrderModal"],["choiceModal","closeChoiceModal"],["customerModal","closeCustomerModal"],["customerDetailModal","closeCustomerDetails"],["gstPrintModal","closeGstPrintDialog"]].forEach(([id,close])=>{
+    [["orderModal","closeOrderModal"],["choiceModal","closeChoiceModal"],["customerModal","closeCustomerModal"],["customerDetailModal","closeCustomerDetails"],["productModal","closeProductModal"],["gstPrintModal","closeGstPrintDialog"]].forEach(([id,close])=>{
       const el=document.getElementById(id);if(el)el.addEventListener("click",function(e){if(e.target===this)window[close]();});
     });
-    document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeOrderModal();closeChoiceModal();closeCustomerModal();closeCustomerDetails();closeGstPrintDialog();closeSideMenu();}});
+    document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeOrderModal();closeChoiceModal();closeCustomerModal();closeCustomerDetails();closeProductModal();closeGstPrintDialog();closeSideMenu();}});
     const demoBtn=document.getElementById("demoBtn"),demoStaffBtn=document.getElementById("demoStaffBtn"),demoNote=document.getElementById("demoNote");
     const previewHost=location.protocol==="file:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/\.e2b\.app$/.test(location.hostname)||typeof supabase==="undefined";
     if(previewHost&&demoBtn){demoBtn.style.display="block";if(demoStaffBtn)demoStaffBtn.style.display="block";if(demoNote)demoNote.style.display="block";}
@@ -5468,12 +5665,13 @@ async function initUpgrade(){
   await loadSettings();
   if(!window._gstFormInitialized){window._gstFormInitialized=true;clearGstForm(true);}
   else{fillSettingsForm();recalcGst();}
-  rebuildUpgradeDirectories();renderOrders();renderGstHist(filteredGst());renderCustomers();
-  await Promise.all([loadOrders(),loadGstHist(),loadCustomers()]);
-  rebuildUpgradeDirectories();renderOrders();renderGstHist(filteredGst());renderCustomers();applyRolePermissions();
+  rebuildUpgradeDirectories();renderOrders();renderGstHist(filteredGst());renderCustomers();renderProducts();
+  await Promise.all([loadOrders(),loadGstHist(),loadCustomers(),loadProducts()]);
+  rebuildUpgradeDirectories();renderOrders();renderGstHist(filteredGst());renderCustomers();renderProducts();applyRolePermissions();
 }
 // If a restored session opened the app while the appended module was still parsing.
 window.addEventListener("load",function(){if(document.getElementById("app").style.display==="block"&&UPGRADE_READY===false)initUpgrade();});
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a507463eee803fe1',t:'MTc5Mjk5NDc3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a507a60b1f1899af',t:'MTc5Mjk5ODcwMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
