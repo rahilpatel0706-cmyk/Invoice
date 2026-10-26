@@ -266,6 +266,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 .roleBadge{display:inline-block;padding:4px 8px;border-radius:5px;font-size:10px;font-weight:800;white-space:nowrap;letter-spacing:.25px}
 .roleBadge.owner{background:#e5f4e8;color:#216b2a}.roleBadge.staff{background:#fff0e4;color:#9a490d}
 .owner-hidden{display:none!important}.read-only .owner-action{display:none!important}
+.transport-bulk{margin:0 0 13px;padding:13px 15px;background:#fff;border:1px solid var(--border);border-radius:11px;box-shadow:var(--sh)}
+.transport-bulk-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.transport-bulk-head strong{font-size:14px;color:var(--navy)}
+.transport-bulk-sub{font-size:11px;color:var(--muted);margin-top:3px}.transport-bulk-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.transport-bulk-actions button{margin-left:0;padding:7px 10px}.transport-delete-all{background:#c93434;color:#fff}.transport-delete-all:hover{background:#a92323}
+.transport-bulk-note{margin-top:10px;padding:9px 11px;background:#edf7ee;border:1px solid #cde6d1;border-radius:8px;color:#276037;font-size:11px;line-height:1.5}
+.transport-select-head,.transport-select-cell{width:40px;min-width:40px;text-align:center!important;padding-left:7px!important;padding-right:7px!important}
+.transport-select-head input,.transport-select-cell input{width:17px;height:17px;accent-color:var(--orange);cursor:pointer;vertical-align:middle}
+@media(max-width:760px){.transport-bulk-actions{width:100%}.transport-bulk-actions button{flex:1 1 44%;margin:0}.transport-bulk-note{font-size:12px}}
 .read-only .ob-status-select{cursor:not-allowed;background:#eef0f6;color:var(--muted)}
 .read-only .roleBadge.staff{outline:1px solid #efc69f}
 .cm-table{min-width:1080px}.cm-table td{font-size:12px;vertical-align:top}.cm-table .hbtns{min-width:205px}.cm-name-link{font-size:13px;font-weight:800;text-align:left}.cm-derived{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:9px;background:#fff0e4;color:#9a490d;font-size:9px;font-weight:700;vertical-align:middle}.cm-stats{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:12px;margin-bottom:15px}.cm-stats>div{background:#fff;border:1px solid var(--border);border-radius:9px;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 7px rgba(26,39,68,.05)}.cm-stats span{font-size:11px;color:var(--muted);font-weight:600}.cm-stats strong{font-size:23px;color:var(--navy)}
@@ -1028,7 +1036,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
   <div class="ob-wrap">
     <div class="ob-head">
       <div><div class="ob-title">👥 Customer Directory & Details</div><div class="ob-subtitle">Search every customer detail, open the full customer profile, and jump to linked orders, invoices, quotations and proformas.</div></div>
-      <div class="ob-actions"><button class="btn btn-o btn-sm" onclick="loadCustomers()">↻ Refresh</button><button class="btn btn-o btn-sm" onclick="exportCustomersExcel()">⬇ Export Excel</button><button class="btn btn-p owner-only" onclick="openCustomerModal()">＋ New Customer</button></div>
+      <div class="ob-actions"><button class="btn btn-o btn-sm" onclick="loadCustomers()">↻ Refresh</button><button class="btn btn-o btn-sm" onclick="exportCustomersExcel()">⬇ Export Listed Excel</button><button class="btn btn-o btn-sm" onclick="exportAllCustomersExcel()">⬇ Export All Excel</button><button class="btn btn-p owner-only" onclick="openCustomerModal()">＋ New Customer</button></div>
     </div>
     <div class="cm-stats"><div><span>Total customers</span><strong id="cm-total">0</strong></div><div><span>With GSTIN</span><strong id="cm-gstin-count">0</strong></div><div><span>Different shipping</span><strong id="cm-shipping-count">0</strong></div></div>
     <div class="ob-toolbar"><input class="hsearch" id="cm-search" placeholder="Search name, mobile, email, GSTIN, address, shipping, order or invoice..." oninput="renderCustomers()"><button class="fclr" onclick="document.getElementById('cm-search').value='';renderCustomers()">✕ Clear</button></div>
@@ -1197,7 +1205,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
       <div><div class="htitle">GST Tax Invoice History</div><div class="xsub">Formal invoices only — transport documents remain in their original history.</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-p btn-sm owner-only" onclick="openNewGstInvoice()">＋ New GST Invoice</button>
-        <button class="vbtn" style="padding:8px 14px;font-size:13px" onclick="exportGstExcel()">⬇ Export Excel</button>
+        <button class="vbtn" style="padding:8px 14px;font-size:13px" onclick="exportGstExcel()">⬇ Export Listed Excel</button><button class="vbtn" style="padding:8px 14px;font-size:13px" onclick="exportAllGstExcel()">⬇ Export All Excel</button>
         <input class="hsearch" id="g-hsearch" placeholder="Search invoice, customer or order..." oninput="filterGstHist()">
       </div>
     </div>
@@ -4131,7 +4139,7 @@ function applyRolePermissions(){
   document.querySelectorAll(".owner-only,[data-owner-only]").forEach(el=>{el.classList.toggle("owner-hidden",!owner);});
   // Mark controls in the original modules without changing their print code.
   // View, history, search, export and print actions remain available to staff.
-  const mutation= /\b(?:saveInv|editInv|delInv|saveQuot|editQuot|delQuot|saveProf|editProf|delProf|clearForm|clearQForm|clearPForm|addRow|remRow|addQRow|remQRow|addPRow|remPRow|saveGst|editGst|delGst|saveOrderFromModal|deleteOrder|changeOrderStatus|openChoiceModal|openTransportFromOrder|openGstFromOrder|saveSettings|resetSettings|saveCustomer|deleteCustomer)\s*\(/;
+  const mutation= /\b(?:saveInv|editInv|delInv|saveQuot|editQuot|delQuot|saveProf|editProf|delProf|clearForm|clearQForm|clearPForm|addRow|remRow|addQRow|remQRow|addPRow|remPRow|saveGst|editGst|delGst|saveOrderFromModal|deleteOrder|changeOrderStatus|openChoiceModal|openTransportFromOrder|openGstFromOrder|saveSettings|resetSettings|saveCustomer|deleteCustomer|deleteSelectedTransport|deleteAllTransport)\s*\(/;
   document.querySelectorAll("[onclick]").forEach(el=>{
     const code=el.getAttribute("onclick")||"";
     if(mutation.test(code)||/\bopenOrderModal\s*\(\s*\)/.test(code))el.classList.add("owner-action");
@@ -4410,9 +4418,10 @@ async function deleteCustomer(id){
     allCustomers=allCustomers.filter(x=>String(x.id)!==String(id));localSet(customerCacheKey(),allCustomers);renderCustomers();rebuildUpgradeDirectories();closeCustomerModal();showToast("Customer deleted from the master.","success");
   }catch(e){showToast("Customer delete failed: "+e.message,"error");}finally{setLoading(false);}
 }
-function exportCustomersExcel(){
-  const list=filteredCustomers();exportToXlsx(list.map(c=>({"Customer Name":c.name,"Contact Person":c.contactPerson,"Mobile":c.mobile,"Email":c.email,"City / Location":c.location,"State":stateName(c.stateCode),"State Code":c.stateCode,"GSTIN":c.gstin,"Legacy GSTIN":c.legacyGstin,"Billing Address":c.address,"Shipping Name":c.shipName,"Shipping Address":c.shipAddress,"Shipping State Code":c.shipState,"Default Transport":c.transport,"Destination":c.destination,"Notes":c.notes,"Source":c.source,"Legacy References":(c.legacyRefs||[]).join(", ")})),"Customers","jigar-customers-"+todayLocal()+".xlsx");
+function exportCustomersExcel(list,kind){
+  const rows=list||filteredCustomers();exportToXlsx(rows.map(c=>({"Customer Name":c.name,"Contact Person":c.contactPerson,"Mobile":c.mobile,"Email":c.email,"City / Location":c.location,"State":stateName(c.stateCode),"State Code":c.stateCode,"GSTIN":c.gstin,"Legacy GSTIN":c.legacyGstin,"Billing Address":c.address,"Shipping Name":c.shipName,"Shipping Address":c.shipAddress,"Shipping State Code":c.shipState,"Default Transport":c.transport,"Destination":c.destination,"Notes":c.notes,"Source":c.source,"Legacy References":customerLegacyRefs(c).join(", ")})),"Customers","jigar-customers-"+(kind?kind+"-":"")+todayLocal()+".xlsx");
 }
+function exportAllCustomersExcel(){exportCustomersExcel(customerDisplayList(),"all");}
 
 
 // ═══ CUSTOMER 360° SEARCH, FULL DETAILS & LINKED HISTORY ═══
@@ -5078,16 +5087,17 @@ function gstWhatsApp(d){
 }
 function sendGstWhatsApp(){const d=collectGst();if(validateGst(d))gstWhatsApp(d);}
 function sendGstWhatsAppFor(no){const d=findGst(no);if(d)gstWhatsApp(d);}
-function exportGstExcel(){
-  const list=filteredGst();exportToXlsx(list.map(d=>({"Invoice No":d.invoiceNo,"Invoice Date":fmtDate(d.invoiceDate),"Customer":d.clientName,"Customer GSTIN":d.clientGstin,
+function exportGstExcel(list,kind){
+  const rows=list||filteredGst();exportToXlsx(rows.map(d=>({"Invoice No":d.invoiceNo,"Invoice Date":fmtDate(d.invoiceDate),"Customer":d.clientName,"Customer GSTIN":d.clientGstin,
     "Billing Address":d.clientAddress,"Consignee":d.shipName,"Consignee GSTIN":d.shipGstin,"Shipping Address":d.shipAddress,
     "Order No":d.orderNo,"Order Date":d.orderDate?fmtDate(d.orderDate):"","Challan No":d.challan,"Challan Date":d.challanDate?fmtDate(d.challanDate):"",
     "Place of Supply":d.placeOfSupply,"State Code":d.placeOfSupplyState,"GST Type":d.gstType,"Transport":d.transport,"Vehicle No":d.vehicleNo,"LR No":d.lrNo,
     "Date of Supply":d.supplyDate?fmtDate(d.supplyDate):"","E-Way Bill No":d.ewayBillNo,"IRN":d.irn,
     "Products":(d.products||[]).map(p=>productText(p)+" | HSN "+p.hsn+" | Qty "+p.qty+" "+(p.uom||"NOS")+" | Rate "+p.rate+" | Disc "+(p.disc||0)+"% | GST "+p.gst+"% | Taxable "+num(p.amt).toFixed(2)).join(" ;; "),
     "Taxable Value":num(d.taxable).toFixed(2),"CGST":num(d.cgst).toFixed(2),"SGST":num(d.sgst).toFixed(2),"IGST":num(d.igst).toFixed(2),
-    "Round Off":num(d.roundOff).toFixed(2),"Net Amount":num(d.grand).toFixed(2),"Amount in Words":d.taxWords,"Remark":d.remark,"Internal Notes":d.notes})),"GST Invoices","jigar-gst-invoices-"+todayLocal()+".xlsx");
+    "Round Off":num(d.roundOff).toFixed(2),"Net Amount":num(d.grand).toFixed(2),"Amount in Words":d.taxWords,"Remark":d.remark,"Internal Notes":d.notes})),"GST Invoices","jigar-gst-invoices-"+(kind?kind+"-":"")+todayLocal()+".xlsx");
 }
+function exportAllGstExcel(){exportGstExcel(allGstHist.slice(),"all");}
 
 
 // ═══ FORMAL GST TAX INVOICE — SELF-CONTAINED PRINT / PDF ═══
@@ -5225,6 +5235,200 @@ function toggleSideMenu(){setSideMenu(!document.body.classList.contains("side-me
 function closeSideMenu(){setSideMenu(false);}
 
 
+// ═══ TRANSPORT INVOICE MAINTENANCE + EXCEL BACKUPS ═══
+// Customer archiving always finishes before the first invoice DELETE request.
+// The original transport invoice HTML and print functions are not changed.
+var transportSelection=new Set();
+var transportBulkRunning=false;
+
+function transportCustomerName(inv){return String(inv&&inv.clientName||"").trim();}
+function transportValidGstin(value){return /^[0-9A-Z]{15}$/.test(String(value||"").toUpperCase());}
+function transportRefs(c){return Array.isArray(c&&c.legacyRefs)?c.legacyRefs:(c&&c.legacyRefs?[c.legacyRefs]:[]);}
+function transportArchiveRecord(group,existing){
+  const c=existing?cloneObj(existing):{id:"",name:group.name,stateCode:"",shipSame:true,legacyRefs:[],source:""};
+  c.id=existing&&existing.id?existing.id:"";c.name=existing&&existing.name?existing.name:group.name;c.derived=false;
+  c.legacyRefs=transportRefs(c).slice();c.shipSame=c.shipSame!==false;
+  if(c.gstin&&!transportValidGstin(c.gstin)){
+    if(!c.legacyGstin)c.legacyGstin=c.gstin;
+    c.gstin="";
+  }
+  const fill=(key,value)=>{
+    if(value===undefined||value===null||!String(value).trim())return;
+    if(c[key]===undefined||c[key]===null||!String(c[key]).trim())c[key]=value;
+  };
+  group.invoices.forEach(inv=>{
+    fill("mobile",inv.clientMobile);fill("location",inv.clientLocation);fill("address",inv.clientAddress);
+    fill("transport",inv.transport);fill("destination",inv.destination);
+    const raw=String(inv.clientGstin||"").trim().toUpperCase();
+    if(raw&&transportValidGstin(raw)){fill("gstin",raw);fill("stateCode",inv.clientState||raw.slice(0,2));}
+    else if(raw&&!c.legacyGstin)c.legacyGstin=raw;
+    fill("stateCode",inv.clientState);
+    if(inv.invoiceNo&&!c.legacyRefs.some(x=>String(x)===String(inv.invoiceNo)))c.legacyRefs.push(String(inv.invoiceNo));
+  });
+  if(!c.stateCode)c.stateCode="24";
+  if(!c.source)c.source="Transport invoice archive";
+  c.lastTransportArchiveAt=new Date().toISOString();
+  return c;
+}
+async function archiveCustomersForTransport(invoices){
+  const groups=new Map();let withoutCustomer=0;
+  (invoices||[]).forEach(inv=>{
+    const name=transportCustomerName(inv);if(!name){withoutCustomer++;return;}
+    const key=customerKey(name);if(!groups.has(key))groups.set(key,{name:name,invoices:[]});
+    groups.get(key).invoices.push(inv);
+  });
+  const saved=[];
+  for(const group of groups.values()){
+    const existing=allCustomers.find(c=>customerKey(c.name)===customerKey(group.name));
+    const record=transportArchiveRecord(group,existing);
+    // saveCustomerRecord waits for the server/demo API response and updates the
+    // local master only after that response. A missing ID is treated as failure.
+    const row=await saveCustomerRecord(record);
+    if(!row||!row.id)throw new Error("Customer Master did not confirm saving "+group.name+".");
+    saved.push(row);
+  }
+  return {saved:saved,withoutCustomer:withoutCustomer};
+}
+
+async function deleteTransportInvoiceRecord(no,deferRender){
+  await apiFetch("/api/invoices?invoiceNo="+encodeURIComponent(no),{method:"DELETE",body:{invoiceNo:no}});
+  allHist=allHist.filter(i=>String(i.invoiceNo)!==String(no));ssSet("je_inv",allHist);
+  transportSelection.delete(String(no));
+  if(typeof onTransportDeleted==="function"){
+    try{await onTransportDeleted(no);}catch(e){console.warn("Invoice deleted; order link cleanup failed:",e.message);}
+  }
+  if(!deferRender){renderHist(filteredInv());refreshAllDirectories();rebuildUpgradeDirectories();}
+}
+async function deleteTransportBatch(invoices){
+  if(!ownerRequired())return;
+  if(transportBulkRunning||_saving){showToast("Please wait — another save/delete is in progress.","error");return;}
+  const list=(invoices||[]).filter((inv,index,arr)=>inv&&inv.invoiceNo&&arr.findIndex(x=>String(x.invoiceNo)===String(inv.invoiceNo))===index);
+  if(!list.length){showToast("There are no transport invoices to delete.","error");return;}
+  transportBulkRunning=true;_saving=true;setLoading(true,"Saving customer data before deleting invoices...");
+  let deleted=0,failed=[],archive=null;
+  try{
+    try{
+      // This phase must complete successfully before any DELETE request below.
+      archive=await archiveCustomersForTransport(list);
+    }catch(e){
+      showToast("Delete cancelled: customer archiving failed. No transport invoices were deleted. "+e.message,"error");return;
+    }
+    for(const inv of list){
+      setLoading(true,"Customer data saved. Deleting invoice "+(deleted+failed.length+1)+" of "+list.length+"...");
+      try{await deleteTransportInvoiceRecord(inv.invoiceNo,true);deleted++;}
+      catch(e){failed.push(String(inv.invoiceNo)+": "+e.message);}
+    }
+    renderHist(filteredInv());refreshAllDirectories();rebuildUpgradeDirectories();renderCustomers();
+    let msg=deleted+" of "+list.length+" transport invoice"+(list.length===1?"":"s")+" deleted. Customer data is saved in Customer Master.";
+    if(archive&&archive.withoutCustomer)msg+=" "+archive.withoutCustomer+" invoice"+(archive.withoutCustomer===1?"":"s")+" had no customer name.";
+    if(failed.length)showToast(msg+" Not deleted: "+failed.join(" | "),"error");
+    else showToast(msg,"success");
+  }finally{
+    transportBulkRunning=false;_saving=false;setLoading(false);
+  }
+}
+// Replace only deletion behavior. Printing, viewing and the original invoice
+// layout continue to use the uploaded application's original functions.
+window.delInv=async function(no){
+  if(!ownerRequired())return;const inv=findInv(no);if(!inv){showToast("Invoice not found.","error");return;}
+  if(!confirm("Delete Invoice "+no+" permanently?\n\nCustomer details will be saved in Customer Master first. Export All Excel first if you also need an invoice backup."))return;
+  await deleteTransportBatch([inv]);
+};
+function toggleTransportSelection(no,checked){
+  if(!userIsOwner())return;const key=String(no);if(checked)transportSelection.add(key);else transportSelection.delete(key);updateTransportBulkBar(filteredInv());
+}
+function toggleSelectAllTransport(checked){
+  if(!userIsOwner())return;filteredInv().forEach(inv=>{const no=String(inv.invoiceNo);if(checked)transportSelection.add(no);else transportSelection.delete(no);});renderHist(filteredInv());
+}
+function clearTransportSelection(){transportSelection.clear();renderHist(filteredInv());}
+function selectedTransportInvoices(){return allHist.filter(inv=>transportSelection.has(String(inv.invoiceNo)));}
+function deleteSelectedTransport(){
+  if(!ownerRequired())return;const list=selectedTransportInvoices();
+  if(!list.length){showToast("Select one or more transport invoices first.","error");return;}
+  if(!confirm("Archive customer data and permanently delete "+list.length+" selected transport invoice"+(list.length===1?"":"s")+"?"))return;
+  return deleteTransportBatch(list);
+}
+function deleteAllTransport(){
+  if(!ownerRequired())return;const list=allHist.slice();if(!list.length){showToast("There are no transport invoices to delete.","error");return;}
+  const typed=window.prompt("DELETE ALL TRANSPORT INVOICES\n\nThis permanently deletes "+list.length+" invoices after archiving their customers. Orders and Customer Master records remain.\n\nType DELETE ALL to continue:","");
+  if(typed===null)return;if(String(typed).trim()!=="DELETE ALL"){showToast("Delete All cancelled. Type DELETE ALL exactly to confirm.","error");return;}
+  if(!confirm("Final confirmation: archive customers and permanently delete ALL "+list.length+" transport invoices?"))return;
+  return deleteTransportBatch(list);
+}
+
+// Detailed, flat Excel rows. Product data remains readable after invoices are
+// deleted from the app; this is an export backup, not an accounting import.
+function transportInvoiceExportRow(d){
+  return {
+    "Invoice No":d.invoiceNo,"Date":fmtDate(d.invoiceDate),"Customer":d.clientName,"Mobile":d.clientMobile,
+    "Location":d.clientLocation,"Billing Address":d.clientAddress||"","GSTIN":d.clientGstin,"Transport":d.transport,
+    "Destination":d.destination,"Parcels":d.parcels,"Challan No":d.challan,"Buyer PO":d.po,"GST Type":d.gstType,
+    "Products":(d.products||[]).map(p=>productText(p)+" | HSN "+(p.hsn||"")+" | Qty "+(p.qty||"")+" | Rate "+(p.rate||"")+" | GST "+(p.gst===undefined?"":p.gst)+"% | Amount "+num(p.amt).toFixed(2)).join("\n"),
+    "Taxable (₹)":num(d.taxable).toFixed(2),"Packing (₹)":num(d.packing).toFixed(2),"CGST (₹)":num(d.cgst).toFixed(2),
+    "SGST (₹)":num(d.sgst).toFixed(2),"IGST (₹)":num(d.igst).toFixed(2),
+    "Round Off (₹)":roundOffOf([d.taxable,d.packing,d.cgst,d.sgst,d.igst],d.grand).toFixed(2),"Grand Total (₹)":num(d.grand).toFixed(2),
+    "Amount in Words":d.taxWords,"Notes":d.notes
+  };
+}
+function exportTransportListExcel(list,kind){
+  exportToXlsx((list||[]).map(transportInvoiceExportRow),"Invoices","jigar-invoices-"+(kind||"listed")+"-"+todayLocal()+".xlsx");
+}
+// The original button still exports the currently filtered/listed invoices.
+window.exportInvExcel=function(){exportTransportListExcel(filteredInv(),"listed");};
+function exportAllTransportExcel(){exportTransportListExcel(allHist.slice(),"all");}
+function exportSelectedTransportExcel(){
+  const list=selectedTransportInvoices();if(!list.length){showToast("Select one or more transport invoices first.","error");return;}
+  exportTransportListExcel(list,"selected");
+}
+
+function updateTransportBulkBar(list){
+  const info=document.getElementById("h-selection-info");if(info)info.textContent=transportSelection.size+" selected · "+(list||[]).length+" listed · "+allHist.length+" total";
+  const all=document.getElementById("h-select-all");if(all){const rows=list||[];const count=rows.filter(inv=>transportSelection.has(String(inv.invoiceNo))).length;all.checked=!!rows.length&&count===rows.length;all.indeterminate=count>0&&count<rows.length;}
+}
+function enhanceTransportHistory(list){
+  const body=document.getElementById("hbody");if(!body)return;
+  Array.from(body.querySelectorAll("tr")).forEach(row=>{
+    const first=row.querySelector("td");if(!first)return;
+    if(row.querySelector(".empty")){first.colSpan=8;return;}
+    const badge=first.querySelector(".badge");if(!badge)return;
+    const no=badge.textContent.trim();if(!no)return;
+    const cell=document.createElement("td");cell.className="owner-only transport-select-cell";
+    cell.innerHTML='<input type="checkbox" aria-label="Select transport invoice" '+(transportSelection.has(no)?"checked":"")+' onchange="toggleTransportSelection(\''+escArg(no)+'\',this.checked)">';
+    row.insertBefore(cell,first);
+  });
+  updateTransportBulkBar(list||[]);
+}
+var _transportOriginalRender=window.renderHist;
+window.renderHist=function(list){_transportOriginalRender.call(this,list);enhanceTransportHistory(list);};
+function installTransportMaintenance(){
+  const panel=document.getElementById("panel-history");if(!panel)return;
+  if(!document.getElementById("transportBulkBar")){
+    const bar=document.createElement("div");bar.id="transportBulkBar";bar.className="transport-bulk owner-only";
+    bar.innerHTML='<div class="transport-bulk-head"><div><strong>Transport invoice maintenance</strong><div class="transport-bulk-sub" id="h-selection-info">0 selected</div></div><div class="transport-bulk-actions">'+
+      '<button class="vbtn" onclick="toggleSelectAllTransport(true)">Select Listed</button>'+
+      '<button class="vbtn" onclick="clearTransportSelection()">Clear Selection</button>'+
+      '<button class="pbtn" onclick="exportSelectedTransportExcel()">⬇ Export Selected Excel</button>'+
+      '<button class="dbtn" onclick="deleteSelectedTransport()">Delete Selected</button>'+
+      '<button class="dbtn transport-delete-all" onclick="deleteAllTransport()">Delete All</button></div></div>'+
+      '<div class="transport-bulk-note"><b>Customer data is protected:</b> every customer is saved/updated in Customer Master before any selected invoice is deleted. If archiving fails, deletion stops. Use <b>Export All Excel</b> before deletion if you also want a separate invoice backup.</div>';
+    const table=panel.querySelector(".htw");table.parentNode.insertBefore(bar,table);
+  }
+  const head=panel.querySelector("thead tr");
+  if(head&&!document.getElementById("h-select-all")){
+    const th=document.createElement("th");th.className="owner-only transport-select-head";
+    th.innerHTML='<input id="h-select-all" type="checkbox" aria-label="Select all listed transport invoices" onchange="toggleSelectAllTransport(this.checked)">';head.insertBefore(th,head.firstChild);
+  }
+  const exportButton=Array.from(panel.querySelectorAll("button")).find(b=>b.getAttribute("onclick")==="exportInvExcel()");
+  if(exportButton){
+    exportButton.textContent="⬇ Export Listed Excel";exportButton.title="Download only the invoices currently shown by the filters";
+    if(!document.getElementById("h-export-all")){
+      const all=document.createElement("button");all.id="h-export-all";all.className="vbtn";all.style.cssText="padding:8px 14px;font-size:13px";all.textContent="⬇ Export All Excel";all.title="Download every transport invoice, ignoring filters";all.setAttribute("onclick","exportAllTransportExcel()");exportButton.parentNode.insertBefore(all,exportButton.nextSibling);
+    }
+  }
+  renderHist(filteredInv());applyRolePermissions();
+}
+
+
 // ═══ APP SHELL INTEGRATION ═══
 const _upgradeLoadHist=loadHist;
 loadHist=async function(){const result=await _upgradeLoadHist();rebuildUpgradeDirectories();if(document.getElementById("tab-customers")?.classList.contains("active"))renderCustomers();return result;};
@@ -5249,7 +5453,7 @@ function installLegacyRoleGuards(){
   };
 }
 async function initUpgrade(){
-  await resolveUserRole();installLegacyRoleGuards();
+  await resolveUserRole();installLegacyRoleGuards();installTransportMaintenance();
   fillUpgradeStateSelects();
   if(!UPGRADE_READY){
     UPGRADE_READY=true;
@@ -5272,4 +5476,4 @@ async function initUpgrade(){
 window.addEventListener("load",function(){if(document.getElementById("app").style.display==="block"&&UPGRADE_READY===false)initUpgrade();});
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4f840235e3677ba',t:'MTc5MjgzNzI0Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a507463eee803fe1',t:'MTc5Mjk5NDc3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
