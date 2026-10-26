@@ -1053,12 +1053,12 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
   <div class="ob-wrap">
     <div class="ob-head">
       <div><div class="ob-title">📦 Product Directory</div><div class="ob-subtitle">Save products once, then select them in transport invoices, GST invoices, orders, quotations and proformas.</div></div>
-      <div class="ob-actions"><button class="btn btn-o btn-sm" onclick="loadProducts()">↻ Refresh</button><button class="btn btn-s btn-sm owner-only" onclick="rebuildProductsFromDocuments()">♻ Rebuild from Documents</button><button class="btn btn-o btn-sm" onclick="exportProductsExcel()">⬇ Export Listed Excel</button><button class="btn btn-o btn-sm" onclick="exportAllProductsExcel()">⬇ Export All Excel</button><button class="btn btn-p owner-only" onclick="openProductModal()">＋ New Product</button></div>
+      <div class="ob-actions"><button class="btn btn-o btn-sm" onclick="loadProducts()">↻ Refresh</button><button class="btn btn-s btn-sm owner-only" onclick="rebuildProductsFromDocuments()">♻ Rebuild from Documents</button><button class="btn btn-o btn-sm" onclick="exportProductsExcel()">⬇ Export Listed Excel</button><button class="btn btn-o btn-sm" onclick="exportAllProductsExcel()">⬇ Export All Excel</button><button class="btn btn-s btn-sm owner-only" onclick="document.getElementById('pm-import-file').click()">⬆ Import Excel</button><input id="pm-import-file" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importProductsExcel(this)"><button class="btn btn-p owner-only" onclick="openProductModal()">＋ New Product</button></div>
     </div>
     <div class="cm-stats"><div><span>Total products</span><strong id="pm-total">0</strong></div><div><span>With HSN / SAC</span><strong id="pm-hsn-count">0</strong></div><div><span>Only in documents</span><strong id="pm-derived-count">0</strong></div></div>
     <div class="ob-toolbar"><input class="hsearch" id="pm-search" placeholder="Search product, details, HSN, make or document number..." oninput="renderProducts()"><button class="fclr" onclick="document.getElementById('pm-search').value='';renderProducts()">✕ Clear</button></div>
     <div class="htw" style="overflow-x:auto"><table class="htable cm-table"><thead><tr><th>Product / Details</th><th>HSN / SAC</th><th>UOM</th><th>Default Rate</th><th>GST %</th><th>Used In</th><th>Actions</th></tr></thead><tbody id="pm-body"></tbody></table><div class="hfoot" id="pm-foot"></div></div>
-    <div class="noteBox" style="margin-top:14px"><b>Recovery and deletion protection.</b> Rebuild from Documents saves products still found in orders, GST/transport invoices, quotations and proformas. It cannot recreate a product whose only document was already deleted and has no surviving backup. Future transport deletions archive products before deleting invoices.</div>
+    <div class="noteBox" style="margin-top:14px"><b>Recovery and deletion protection.</b> Rebuild from Documents saves products still found in orders, GST/transport invoices, quotations and proformas. It cannot recreate a product whose only document was already deleted and has no surviving backup. Future transport deletions archive products before deleting invoices.<br><b>Excel import:</b> use a <b>Product Name</b> column for a simple list, or columns such as Details / Specification, Make, HSN / SAC, UOM, Default Rate and GST %. The app’s invoice Excel <b>Products</b> column is also accepted.</div>
   </div>
 </div>
 
@@ -1487,7 +1487,7 @@ async function apiFetch(path, options={}) {
     options={...options, body:JSON.stringify(options.body)};
   }
   const response=await fetch(path,{...options,headers});
-  const result=await response.json().catch(()=>({status:"error",message:"Invalid server response."}));
+  const result=await response.json().catch(()=>({status:"error",message:"Server returned non-JSON (HTTP "+response.status+"). Check that the latest API routes are deployed."}));
   if(!response.ok || result.status==="error") throw new Error(result.message||"Server request failed.");
   return result;
 }
@@ -4961,6 +4961,77 @@ function exportProductsExcel(list,kind){
 }
 function exportAllProductsExcel(){exportProductsExcel(productDisplayList(),"all");}
 
+function importHeader(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]/g,"");}
+function importNumber(value,fallback){
+  if(value===undefined||value===null||String(value).trim()==="")return fallback;
+  const n=parseFloat(String(value).replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:fallback;
+}
+function parseProductImportLine(line){
+  let text=String(line||"").trim();if(!text)return null;const parts=text.split("|").map(x=>x.trim());let name=parts.shift()||"";let details="";
+  const split=name.match(/^(.*?)\s+[—–]\s+(.*)$/);if(split){name=split[1].trim();details=split[2].trim();}
+  const p={name:name,details:details,make:"",hsn:"",uom:"",rate:"",gst:"",notes:""};
+  parts.forEach(part=>{
+    let m=part.match(/^HSN(?:\s*\/\s*SAC)?\s*:?\s*(.*)$/i);if(m){p.hsn=m[1].trim();return;}
+    m=part.match(/^UOM\s*:?\s*(.*)$/i);if(m){p.uom=m[1].trim();return;}
+    m=part.match(/^Rate\s*:?\s*(.*)$/i);if(m){p.rate=importNumber(m[1],"");return;}
+    m=part.match(/^GST\s*:?\s*([0-9.]+)\s*%?/i);if(m){p.gst=importNumber(m[1],"");return;}
+    m=part.match(/^Make\s*:?\s*(.*)$/i);if(m){p.make=m[1].trim();return;}
+  });
+  return p.name?p:null;
+}
+function parseProductImportRows(rows){
+  const map=new Map();let skipped=0;
+  const add=p=>{
+    if(!p||!String(p.name||"").trim()){skipped++;return;}
+    p.name=String(p.name).trim();
+    const key=productKey(p.name);if(!map.has(key))map.set(key,p);else{const old=map.get(key);["details","make","hsn","uom","rate","gst","notes"].forEach(k=>{if((old[k]===undefined||old[k]===null||String(old[k]).trim()==="")&&p[k]!==undefined&&p[k]!=="")old[k]=p[k];});}
+  };
+  (rows||[]).forEach(row=>{
+    const normalized={};Object.keys(row||{}).forEach(k=>normalized[importHeader(k)]=row[k]);
+    const val=keys=>{for(const k of keys){if(normalized[k]!==undefined&&normalized[k]!==null&&String(normalized[k]).trim()!=="")return normalized[k];}return "";};
+    const direct=val(["productname","product","name","description","descriptionofgoods","itemname","item","productdescription"]);
+    const lines=val(["products","productlines","lineitems"]);
+    const base={name:direct,details:val(["details","specification","detailsspecification","productdetails","spec"]),make:val(["make","brand","makebrand","manufacturer"]),hsn:val(["hsn","hsnsac","hsncode","sac"]),uom:val(["uom","unit","unitofmeasurement"]),rate:importNumber(val(["rate","defaultrate","price","unitrate","unitprice"]),""),gst:importNumber(val(["gst","gstpercent","gstpercentage"]),""),notes:val(["notes","note"])};
+    if(lines&&!direct){String(lines).split(/\n| ;; /).forEach(line=>add(parseProductImportLine(line)));}
+    else if(direct&&/[|\n]/.test(String(direct))&&!base.hsn){String(direct).split(/\n| ;; /).forEach(line=>add(parseProductImportLine(line)));}
+    else add(base);
+  });
+  map.forEach(p=>{p.uom=p.uom||"NOS";p.gst=p.gst===""||p.gst===undefined?18:p.gst;});
+  return {products:Array.from(map.values()),skipped:skipped};
+}
+function productImportRecord(p,existing){
+  const c=existing?cloneObj(existing):{id:"",name:p.name,uom:"NOS",gst:18,legacyRefs:[],source:"Excel import"};
+  c.id=existing&&!existing.derived&&existing.id?existing.id:"";c.name=existing&&existing.name?existing.name:p.name;c.derived=false;c.legacyRefs=productLegacyRefs(c).slice();
+  ["details","make","hsn","uom","rate","gst","notes"].forEach(k=>{if((c[k]===undefined||c[k]===null||String(c[k]).trim()==="")&&p[k]!==undefined&&p[k]!=="")c[k]=p[k];});
+  if(!c.uom)c.uom="NOS";if(c.gst===""||c.gst===undefined)c.gst=18;if(!c.source)c.source="Excel import";c.lastExcelImportAt=new Date().toISOString();return c;
+}
+function readProductFile(file){
+  if(file.arrayBuffer)return file.arrayBuffer();
+  return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error||new Error("Could not read the Excel file."));reader.readAsArrayBuffer(file);});
+}
+async function importProductsExcel(input){
+  if(!ownerRequired()){if(input)input.value="";return null;}
+  const file=input&&input.files&&input.files[0];if(!file)return null;
+  if(typeof XLSX==="undefined"||!XLSX.read){showToast("Excel library is not loaded. Connect to the internet and refresh.","error");input.value="";return null;}
+  setLoading(true,"Reading product Excel...");
+  try{
+    const buffer=await readProductFile(file),workbook=XLSX.read(buffer,{type:"array"}),rows=[];
+    (workbook.SheetNames||[]).forEach(name=>{const sheet=workbook.Sheets[name];if(!sheet)return;XLSX.utils.sheet_to_json(sheet,{defval:"",raw:false}).forEach(row=>rows.push(row));});
+    const parsed=parseProductImportRows(rows);if(!parsed.products.length)throw new Error("No product names found. Use a Product Name column or an invoice Products column.");
+    if(!confirm("Import "+parsed.products.length+" unique product"+(parsed.products.length===1?"":"s")+"? Existing Product Master details will not be overwritten."))return null;
+    let saved=0,failed=[];
+    for(const p of parsed.products){
+      try{const existing=allProducts.find(x=>productKey(x.name)===productKey(p.name))||productDisplayList().find(x=>x.derived&&productKey(x.name)===productKey(p.name));await saveProductRecord(productImportRecord(p,existing));saved++;}
+      catch(e){failed.push(p.name+": "+e.message);}
+    }
+    renderProducts();rebuildUpgradeDirectories();
+    const msg=saved+" of "+parsed.products.length+" products imported."+(parsed.skipped?" "+parsed.skipped+" blank/unrecognised rows skipped.":"");
+    if(failed.length)showToast(msg+" Failed: "+failed.slice(0,3).join(" | "),"error");else showToast(msg,"success");
+    return {saved:saved,failed:failed,products:parsed.products};
+  }catch(e){showToast("Excel import failed: "+e.message,"error");return null;}
+  finally{setLoading(false);if(input)input.value="";}
+}
+
 function productArchiveRecord(group,existing){
   const p=existing?cloneObj(existing):{id:"",name:group.name,uom:"",gst:"",rate:"",legacyRefs:[],source:""};
   p.id=existing&&existing.id?existing.id:"";p.name=existing&&existing.name?existing.name:group.name;p.derived=false;p.legacyRefs=productLegacyRefs(p).slice();
@@ -5673,5 +5744,4 @@ async function initUpgrade(){
 window.addEventListener("load",function(){if(document.getElementById("app").style.display==="block"&&UPGRADE_READY===false)initUpgrade();});
 
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a507a60b1f1899af',t:'MTc5Mjk5ODcwMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
+</body></html>
