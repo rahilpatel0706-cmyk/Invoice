@@ -1560,7 +1560,7 @@ select option{background:var(--card);color:var(--text)}
       </div>
       <div class="g-print-preview"><iframe id="g-print-frame" title="GST copy preview"></iframe></div>
     </div></div>
-    <div class="xfoot"><span class="xmuted" id="g-print-total">1 page selected</span><div class="xf-right"><button class="btn btn-o" onclick="closeGstPrintDialog()">Cancel</button><button class="btn btn-s" id="g-print-now" onclick="printGstSelection('print')">🖨 Print Selected</button><button class="btn btn-p" id="g-pdf-now" onclick="printGstSelection('pdf')">⬇ Save as PDF</button></div></div>
+    <div class="xfoot"><span class="xmuted" id="g-print-total">1 copy selected</span><div class="xf-right"><button class="btn btn-o" onclick="closeGstPrintDialog()">Cancel</button><button class="btn btn-s" id="g-print-now" onclick="printGstSelection('print')">🖨 Print Selected</button><button class="btn btn-p" id="g-pdf-now" onclick="printGstSelection('pdf')">⬇ Save as PDF</button></div></div>
   </div>
 </div>
 
@@ -5686,7 +5686,7 @@ function buildGstPrintBundle(d,selections){
 }
 function updateGstPrintPreview(){
   if(!gstPrintDocument)return;const selections=gstPrintSelections(),total=selections.reduce((s,x)=>s+x.count,0);
-  document.getElementById("g-print-total").textContent=total+" page"+(total===1?"":"s")+" selected";
+  document.getElementById("g-print-total").textContent=total+" "+(total===1?"copy":"copies")+" selected";
   const frame=document.getElementById("g-print-frame");frame.srcdoc=buildGstPrintBundle(gstPrintDocument,selections);
   document.getElementById("g-print-now").disabled=!selections.length;document.getElementById("g-pdf-now").disabled=!selections.length;
 }
@@ -5694,11 +5694,123 @@ function printGstSelection(mode){
   if(!gstPrintDocument)return;const selections=gstPrintSelections();if(!selections.length){showToast("Select at least one copy.","error");return;}
   const frame=document.getElementById("g-print-frame");
   if(mode==="pdf")showToast("In the browser print window, choose ‘Save as PDF’ as the destination.","info");
-  const run=()=>{try{frame.contentWindow.focus();frame.contentWindow.print();}catch(e){showToast("Print could not open: "+e.message,"error");}};
+  const run=()=>{try{frame.contentWindow.focus();if(typeof frame.contentWindow.__invoiceAutoFit==='function')frame.contentWindow.__invoiceAutoFit();frame.contentWindow.print();}catch(e){showToast("Print could not open: "+e.message,"error");}};
   const ready=frame.contentDocument&&frame.contentDocument.readyState==="complete"&&frame.contentDocument.body&&frame.contentDocument.body.querySelector(".print-copy");
   if(ready)setTimeout(run,80);else{frame.onload=()=>{frame.onload=null;run();};}
 }
 function printGstForm(){const d=collectGst();if(validateGst(d))openGstPrintDialog(d);}
+
+// ═══ AUTOMATIC A4 PRINT FITTING — TRANSPORT + FORMAL GST ═══
+// Content and invoice templates remain unchanged. A small script is added to
+// the generated print document so every print path can fit itself before the
+// browser print dialog opens. The 0.75 floor protects readability on very
+// long invoices; those documents may continue onto additional pages.
+(function(){
+  const INVOICE_PRINT_MIN_SCALE=0.75;
+
+  function invoiceAutoFitDocumentScript(kind){
+    const code=`
+(function(){
+  var KIND=${JSON.stringify(kind)};
+  var MIN_SCALE=${INVOICE_PRINT_MIN_SCALE},MM=96/25.4,saved=[];
+  window.__invoiceAutoFitKind=${JSON.stringify(kind)};
+  function remember(el,prop,value){
+    if(!el)return;
+    for(var i=0;i<saved.length;i++){
+      if(saved[i][0]===el&&saved[i][1]===prop){el.style[prop]=value;return;}
+    }
+    saved.push([el,prop,el.style[prop]]);el.style[prop]=value;
+  }
+  function preparePrintLayout(){
+    var gst=KIND==="gst";
+    remember(document.body,"padding",gst?"0px":"20px");
+    if(gst){
+      remember(document.body,"fontSize","10px");
+      var header=document.querySelector(".header");
+      if(header)remember(header,"gridTemplateColumns","35% 49% 16%");
+      document.querySelectorAll(".party").forEach(function(party){remember(party,"minHeight","136px");});
+    }
+  }
+  function fitInvoicePages(){
+    preparePrintLayout();
+    var gst=KIND==="gst";
+    // Match the templates' existing A4 @page margins and print body padding.
+    var printableHeight=297*MM-(gst?16:20)*MM-(gst?0:40)-10;
+    var printableWidth=210*MM-(gst?16:20)*MM-(gst?0:40);
+    var wraps=document.querySelectorAll(".print-copy .wrap");
+    if(!wraps.length)wraps=document.querySelectorAll(".wrap");
+    wraps.forEach(function(wrap){
+      remember(wrap,"zoom","1");
+      remember(wrap,"maxWidth","none");
+      remember(wrap,"width",printableWidth+"px");
+      var height=Math.max(wrap.scrollHeight,wrap.getBoundingClientRect().height);
+      if(!height)return;
+      var scale=Math.min(1,printableHeight/height);
+      scale=Math.max(MIN_SCALE,Math.floor(scale*100)/100);
+      // Zoom scales both dimensions. Compensate the layout width so text keeps
+      // the same effective printable width instead of becoming a narrow strip.
+      remember(wrap,"width",(printableWidth/scale)+"px");
+      remember(wrap,"zoom",String(scale));
+      wrap.setAttribute("data-invoice-fit-scale",String(scale));
+    });
+  }
+  function restoreScreenLayout(){
+    for(var i=saved.length-1;i>=0;i--)saved[i][0].style[saved[i][1]]=saved[i][2];
+    saved=[];
+    document.querySelectorAll("[data-invoice-fit-scale]").forEach(function(el){el.removeAttribute("data-invoice-fit-scale");});
+  }
+  window.__invoiceAutoFit=fitInvoicePages;
+  window.__invoiceAutoFitRestore=restoreScreenLayout;
+  window.addEventListener("beforeprint",fitInvoicePages);
+  window.addEventListener("afterprint",restoreScreenLayout);
+})();`;
+    // Split the closing tag in the outer app script so the HTML parser does
+    // not mistake this string for the end of the application's own script.
+    return '\n<script>'+code+'</scr'+'ipt>';
+  }
+
+  function injectInvoiceAutoFit(html,kind){
+    const marker='window.__invoiceAutoFitKind='+JSON.stringify(kind)+';';
+    if(html.includes(marker))return html;
+    return html.replace(/<\/body>\s*<\/html>\s*$/i,invoiceAutoFitDocumentScript(kind)+'</body></html>');
+  }
+
+  function printInvoiceWindowWithFit(win){
+    if(!win)return;
+    try{if(typeof win.__invoiceAutoFit==='function')win.__invoiceAutoFit();}
+    catch(error){console.warn('Automatic print fitting could not run; using the original layout.',error);}
+    win.print();
+  }
+  window.printInvoiceWindowWithFit=printInvoiceWindowWithFit;
+
+  const originalTransportHTML=window.buildHTML;
+  if(typeof originalTransportHTML==='function')window.buildHTML=function(){
+    return injectInvoiceAutoFit(originalTransportHTML.apply(this,arguments),'transport');
+  };
+
+  const originalGstBundle=window.buildGstPrintBundle;
+  if(typeof originalGstBundle==='function')window.buildGstPrintBundle=function(){
+    return injectInvoiceAutoFit(originalGstBundle.apply(this,arguments),'gst');
+  };
+
+  // History Print calls the preview directly rather than using printIframe.
+  window.printInv=function(no){
+    window.viewInv(no);
+    const frame=document.getElementById('pif');
+    frame.onload=()=>{frame.onload=null;printInvoiceWindowWithFit(frame.contentWindow);};
+  };
+
+  // The shared preview Print button is also used by quotations/proformas.
+  // Only documents containing the new fit hook take the new path.
+  const originalPreviewPrint=window.printIframe;
+  if(typeof originalPreviewPrint==='function')window.printIframe=function(){
+    const frame=document.getElementById('pif');
+    if(frame&&frame.contentWindow&&typeof frame.contentWindow.__invoiceAutoFit==='function'){
+      printInvoiceWindowWithFit(frame.contentWindow);return;
+    }
+    return originalPreviewPrint.apply(this,arguments);
+  };
+})();
 
 
 // ═══ COLLAPSIBLE SIDE NAVIGATION ═══
@@ -5909,6 +6021,16 @@ function installTransportMaintenance(){
   renderHist(filteredInv());applyRolePermissions();
 }
 
+// ═══ TRANSPORT INVOICE HISTORY FOOTER ═══
+// Keep the record count, Grand Total column and Min/Max filters. Only the
+// bottom aggregate "Total value" summary is hidden for transport history.
+const transportHistoryFooterWithTotal=window.hFoot;
+if(typeof transportHistoryFooterWithTotal==='function')window.hFoot=function(id,list,all,key,fmt){
+  if(id!=='hfoot')return transportHistoryFooterWithTotal.apply(this,arguments);
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML='<span>Showing <strong>'+(list||[]).length+'</strong> of <strong>'+(all||[]).length+'</strong> records</span>';
+};
+
 // ═══ PROFESSIONAL, CONSISTENT HISTORY ACTION TOOLBARS ═══
 // The original history renderers still own their data and click handlers.
 // This enhancement only reorganises their existing action buttons after render.
@@ -5987,8 +6109,9 @@ function installLegacyRoleGuards(){
     if(!userIsOwner()&&["new","gstnew","quot","prof","settings"].includes(t)){ownerRequired();closeSideMenu();return;}
     const result=originalSwitch.apply(this,arguments);closeSideMenu();return result;
   };
-  // Keep the original transport/quotation/proforma print path byte-for-byte;
-  // only a GST preview is diverted to the new copy-selection dialog.
+  // Keep the original transport/quotation/proforma print routing; only a GST
+  // preview is diverted to the copy-selection dialog. Transport auto-fitting
+  // is installed inside its own print document by upgrade-print-fit.js.
   const originalPrint=window.printIframe;
   if(typeof originalPrint==="function")window.printIframe=function(){
     const title=document.getElementById("mtitle")?.textContent||"";
