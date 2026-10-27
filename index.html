@@ -457,6 +457,16 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 .set-save{position:sticky;bottom:14px;display:flex;justify-content:flex-end;pointer-events:none;margin-top:16px}
 .set-save button{pointer-events:auto;box-shadow:0 6px 20px rgba(232,104,26,.35)}
 
+/* Product linked-document history */
+.pm-usage{margin-top:15px;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.pm-usage-head{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--navy);color:#fff;padding:9px 12px;font-size:12px;font-weight:800}
+.pm-usage-head b{background:rgba(255,255,255,.15);border-radius:12px;padding:2px 8px;font-size:10px}
+.pm-doc-list{max-height:245px;overflow-y:auto;background:#fff}
+.pm-doc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 12px;border:0;border-top:1px solid var(--border);background:#fff;text-align:left;font-family:inherit;cursor:pointer}
+.pm-doc-row:hover{background:#fafbff}.pm-doc-main{min-width:0}.pm-doc-no{display:block;color:var(--orange);font:800 12px Consolas,monospace;word-break:break-word}
+.pm-doc-meta{display:block;color:var(--muted);font-size:10px;line-height:1.45;margin-top:3px;word-break:break-word}.pm-doc-open{color:var(--orange);font-size:11px;font-weight:800;white-space:nowrap}
+.pm-no-docs{padding:14px 12px;color:var(--muted);font-size:11px}.pm-legacy{padding:10px 12px;border-top:1px solid var(--border);background:#fff9ed;color:#80601d;font-size:10px;line-height:1.55;word-break:break-word}
+
 /* Responsive additions */
 @media(max-width:1100px){.ob-board{grid-template-columns:1fr 1fr}.ob-stats{grid-template-columns:repeat(5,minmax(90px,1fr))}}
 @media(max-width:700px){
@@ -1342,7 +1352,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 
 <!-- PRODUCT ENTRY / EDIT MODAL -->
 <div class="xoverlay" id="productModal">
-  <div class="xbox small">
+  <div class="xbox medium">
     <div class="xbar"><span id="pm-modal-title">Add New Product<span class="xsubhead">Saved defaults are reused in every document form.</span></span><button class="xclose" onclick="closeProductModal()">✕ Close</button></div>
     <div class="xbody">
       <input type="hidden" id="pm-id">
@@ -1352,6 +1362,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
       <div class="fr"><div class="field"><label>UOM</label><select id="pm-uom"><option>NOS</option><option>PCS</option><option>SET</option><option>KG</option><option>MTR</option><option>BOX</option><option>LTR</option></select></div><div class="field"><label>Default GST %</label><select id="pm-gst"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option><option value="28">28%</option></select></div></div>
       <div class="fr s"><div class="field"><label>Default Rate ₹ <span class="opt">(optional — editable on each document)</span></label><input id="pm-rate" type="number" min="0" step="any" placeholder="0.00"></div></div>
       <div class="fr s"><div class="field"><label>Notes</label><textarea id="pm-notes" style="min-height:55px" placeholder="Optional office notes"></textarea></div></div>
+      <div id="pm-usage"></div>
     </div>
     <div class="xfoot"><button class="btn btn-o btn-sm owner-only" id="pm-delete" style="display:none;color:var(--red)" onclick="deleteProduct(document.getElementById('pm-id').value)">🗑 Delete Product</button><div class="xf-right"><button class="btn btn-o" onclick="closeProductModal()">Cancel</button><button class="btn btn-p owner-only" id="pm-save" onclick="saveProduct()">💾 Save Product</button></div></div>
   </div>
@@ -4188,7 +4199,7 @@ function applyRolePermissions(){
   // Staff may open an existing order/customer to inspect it, but not its
   // item editor or save/delete buttons. Close/cancel remains available.
   document.querySelectorAll("#orderModal button,#customerModal button,#productModal button").forEach(el=>{
-    if(!el.classList.contains("xclose")&&!el.classList.contains("owner-only")&&!/close|Cancel/i.test(el.textContent))el.disabled=!owner;
+    if(!el.classList.contains("xclose")&&!el.classList.contains("owner-only")&&!el.classList.contains("view-only")&&!/close|Cancel/i.test(el.textContent))el.disabled=!owner;
   });
   if(!owner){const active=document.querySelector(".panel.active");if(active&&["panel-gstnew","panel-new","panel-quot","panel-prof","panel-settings"].includes(active.id))switchTab("orders");}
 }
@@ -4902,13 +4913,39 @@ function productDocuments(){
     ...((typeof allPHist!=="undefined"?allPHist:[])).map(d=>({doc:d,kind:"proformas"}))
   ];
 }
-function productUsage(p){
-  const key=productKey(p&&p.name||p&&p.desc),result={orders:0,gst:0,transport:0,quotations:0,proformas:0,total:0,refs:[]};
-  productDocuments().forEach(({doc,kind})=>{
-    if(!(doc.products||[]).some(x=>productKey(x.desc)===key))return;
-    result[kind]++;result.total++;const no=doc.orderNo||doc.invoiceNo||doc.quotNo||doc.profNo;if(no)result.refs.push(String(no));
+function productDocumentLinks(p){
+  const key=productKey(p&&p.name||p&&p.desc);if(!key)return [];
+  return productDocuments().filter(({doc})=>(doc.products||[]).some(x=>productKey(x.desc)===key)).map(({doc,kind})=>{
+    const labels={orders:"Order",gst:"GST Invoice",transport:"Transport Invoice",quotations:"Quotation",proformas:"Proforma"};
+    const dates={orders:doc.orderDate||doc.createdAt,gst:doc.invoiceDate,transport:doc.invoiceDate,quotations:doc.date,proformas:doc.date};
+    const customers={orders:doc.clientName,gst:doc.clientName,transport:doc.clientName,quotations:doc.cname,proformas:doc.bname};
+    const numbers={orders:doc.orderNo,gst:doc.invoiceNo,transport:doc.invoiceNo,quotations:doc.quotNo,proformas:doc.profNo};
+    return {kind:kind,label:labels[kind]||kind,number:String(numbers[kind]||doc.orderNo||doc.invoiceNo||doc.quotNo||doc.profNo||""),date:dates[kind]||"",customer:customers[kind]||""};
   });
+}
+function productUsage(p){
+  const result={orders:0,gst:0,transport:0,quotations:0,proformas:0,total:0,refs:[]};
+  productDocumentLinks(p).forEach(link=>{result[link.kind]++;result.total++;if(link.number)result.refs.push(link.number);});
   return result;
+}
+function renderProductUsage(p){
+  const links=productDocumentLinks(p),loaded=new Set(links.map(x=>x.number).filter(Boolean));
+  const historical=productLegacyRefs(p).filter(no=>!loaded.has(String(no)));
+  const rows=links.map(link=>{
+    const meta=[link.label,link.customer,fmtDate(link.date)].filter(x=>x!==undefined&&x!==null&&String(x).trim()!=="").join(" · ");
+    const content=`<span class="pm-doc-main"><span class="pm-doc-no">${esc(link.number||"Unnumbered record")}</span><span class="pm-doc-meta">${esc(meta)}</span></span>`;
+    return link.number?`<button type="button" class="pm-doc-row view-only" onclick="viewProductDocument('${escArg(link.kind)}','${escArg(link.number)}')">${content}<span class="pm-doc-open">View →</span></button>`:`<div class="pm-doc-row">${content}</div>`;
+  }).join("");
+  return `<section class="pm-usage"><div class="pm-usage-head"><span>🔗 Linked documents</span><b>${links.length}</b></div><div class="pm-doc-list">${rows||'<div class="pm-no-docs">No linked documents found for this product.</div>'}</div>${historical.length?`<div class="pm-legacy"><b>Historical references (document not currently available to open):</b> ${historical.map(x=>esc(x)).join(", ")}</div>`:""}</section>`;
+}
+function viewProductDocument(kind,no){
+  closeProductModal();
+  if(kind==="orders")return openOrderModal(no);
+  if(kind==="gst")return viewGst(no);
+  if(kind==="transport")return viewInv(no);
+  if(kind==="quotations")return viewQuot(no);
+  if(kind==="proformas")return viewProf(no);
+  showToast("This document type cannot be opened.","error");
 }
 function filteredProducts(directory){
   const q=(document.getElementById("pm-search")?.value||"").trim().toLowerCase(),list=directory||productDisplayList();
@@ -4933,6 +4970,7 @@ function openProductModal(id){
   document.getElementById("pm-details").value=p?p.details||"":"";document.getElementById("pm-make").value=p?p.make||"":"";document.getElementById("pm-hsn").value=p?p.hsn||"":"";
   document.getElementById("pm-uom").value=p?p.uom||"NOS":"NOS";document.getElementById("pm-rate").value=p&&p.rate!==undefined?p.rate:"";document.getElementById("pm-gst").value=p&&p.gst!==undefined?p.gst:"18";
   document.getElementById("pm-notes").value=p?p.notes||"":"";document.getElementById("pm-delete").style.display=p&&!p.derived&&userIsOwner()?"inline-block":"none";
+  document.getElementById("pm-usage").innerHTML=renderProductUsage(p||{});
   document.getElementById("productModal").classList.add("open");applyRolePermissions();
 }
 function closeProductModal(){document.getElementById("productModal").classList.remove("open");activeProductRecord=null;}
