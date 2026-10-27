@@ -457,6 +457,22 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
 .set-save{position:sticky;bottom:14px;display:flex;justify-content:flex-end;pointer-events:none;margin-top:16px}
 .set-save button{pointer-events:auto;box-shadow:0 6px 20px rgba(232,104,26,.35)}
 
+/* Consistent document-history action toolbars */
+.history-action-cell{min-width:300px;position:relative}
+.history-actions{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap}
+.history-actions .ha-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:31px;padding:5px 10px;margin:0;border:1px solid transparent;border-radius:6px;font-family:inherit;font-size:11px;font-weight:700;line-height:1.1;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
+.history-actions .ha-btn:focus-visible,.history-more summary:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.history-actions .vbtn.ha-view{background:var(--navy);border-color:var(--navy);color:#fff}.history-actions .vbtn.ha-view:hover{background:var(--navy2);border-color:var(--navy2)}
+.history-actions .ebtn.ha-edit,.history-actions .pbtn.ha-print{background:#fff;border-color:#cbd4e3;color:var(--navy)}
+.history-actions .ebtn.ha-edit:hover,.history-actions .pbtn.ha-print:hover{background:#f2f5fb;border-color:#9eacc4}
+.history-actions .wabtn.ha-whatsapp{background:#f2fbf5;border-color:#a7d9ba;color:#147643}.history-actions .wabtn.ha-whatsapp:hover{background:#e3f6e9;border-color:#73bd91}
+.history-more{position:relative;display:inline-block;z-index:1}.history-more[open]{z-index:100}
+.history-more summary{list-style:none;user-select:none}.history-more summary::-webkit-details-marker{display:none}.history-more summary::marker{content:""}
+.history-actions .ha-more{width:32px;padding:5px 4px;background:#fff;border-color:#cbd4e3;color:var(--navy);font-size:18px;line-height:12px}.history-actions .ha-more:hover{background:#f2f5fb;border-color:#9eacc4}
+.history-more-menu{position:absolute;right:0;top:calc(100% + 6px);min-width:148px;padding:5px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 26px rgba(26,39,68,.18);z-index:110}
+.history-more-menu .ha-delete{display:flex;width:100%;justify-content:flex-start;min-height:32px;background:#fff6f6;border-color:#f1cccc;color:var(--red);font-size:11px}.history-more-menu .ha-delete:hover{background:#fde8e8;border-color:#e4a6a6}
+.history-action-cell.history-menu-active{z-index:120}.htw.history-menu-open{overflow:visible!important}
+
 /* Product linked-document history */
 .pm-usage{margin-top:15px;border:1px solid var(--border);border-radius:9px;overflow:hidden}
 .pm-usage-head{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--navy);color:#fff;padding:9px 12px;font-size:12px;font-weight:800}
@@ -478,6 +494,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);fo
   .xbody{padding:12px}.xfoot{padding:10px 12px}.xfoot .xf-right{width:100%;margin-left:0}
   .xfoot .xf-right .btn{flex:1;padding-left:10px;padding-right:10px}.xbanner{flex-direction:column;align-items:flex-start}
   .gi-wrap .card,.ob-wrap .card{overflow:visible}
+  .history-action-cell{min-width:285px}.history-actions{display:grid;grid-template-columns:repeat(3,max-content);gap:6px;white-space:normal}
+  .history-actions .ha-btn{min-height:32px;padding:5px 9px}.history-more-menu{position:static;min-width:140px;margin-top:6px}
 }
 
 </style>
@@ -5733,6 +5751,69 @@ function installTransportMaintenance(){
   }
   renderHist(filteredInv());applyRolePermissions();
 }
+
+// ═══ PROFESSIONAL, CONSISTENT HISTORY ACTION TOOLBARS ═══
+// The original history renderers still own their data and click handlers.
+// This enhancement only reorganises their existing action buttons after render.
+function historyActionLabel(action){
+  return {view:"View",edit:"Edit",print:"Print",whatsapp:"WhatsApp",delete:"Delete"}[action]||action;
+}
+function historyActionButton(original,action){
+  if(!original)return null;
+  const button=original.cloneNode(false);
+  button.className=original.className+" ha-btn ha-"+action;
+  const label=action==="extra"?String(original.textContent||"Action").trim():historyActionLabel(action);
+  button.textContent=label;
+  button.title=original.title||label;
+  button.setAttribute("aria-label",original.getAttribute("aria-label")||label);
+  return button;
+}
+function syncHistoryMenuState(details){
+  const cell=details.closest(".history-action-cell"),wrap=details.closest(".htw");
+  if(details.open)document.querySelectorAll(".history-more[open]").forEach(other=>{if(other!==details)other.open=false;});
+  if(cell)cell.classList.toggle("history-menu-active",details.open);
+  if(wrap)wrap.classList.toggle("history-menu-open",!!wrap.querySelector(".history-more[open]"));
+}
+function enhanceHistoryActionRows(body){
+  if(!body)return;
+  const oldWrap=body.closest(".htw");if(oldWrap)oldWrap.classList.remove("history-menu-open");
+  Array.from(body.querySelectorAll("tr")).forEach(row=>{
+    const cell=row.cells&&row.cells[row.cells.length-1];if(!cell||cell.dataset.historyActionsEnhanced==="true")return;
+    const find=cls=>cell.querySelector("button."+cls);
+    const originals={view:find("vbtn"),edit:find("ebtn"),whatsapp:find("wabtn"),print:find("pbtn"),delete:find("dbtn")};
+    if(!originals.view||!originals.print)return;
+    const toolbar=document.createElement("div");toolbar.className="history-actions hbtns";
+    ["view","edit","print","whatsapp"].forEach(action=>{const button=historyActionButton(originals[action],action);if(button)toolbar.appendChild(button);});
+    if(originals.delete){
+      const more=document.createElement("details");more.className="history-more owner-only";
+      const summary=document.createElement("summary");summary.className="ha-btn ha-more";summary.textContent="⋮";summary.title="More actions";summary.setAttribute("aria-label","More actions");more.appendChild(summary);
+      const menu=document.createElement("div");menu.className="history-more-menu";
+      const del=historyActionButton(originals.delete,"delete");del.classList.add("ha-delete");menu.appendChild(del);more.appendChild(menu);toolbar.appendChild(more);
+      more.addEventListener("toggle",()=>syncHistoryMenuState(more));
+      del.addEventListener("click",()=>{more.open=false;});
+    }
+    // Preserve any future non-standard action instead of silently discarding it.
+    Array.from(cell.querySelectorAll("button")).forEach(button=>{
+      if(!Object.values(originals).includes(button))toolbar.appendChild(historyActionButton(button,"extra"));
+    });
+    cell.replaceChildren(toolbar);cell.classList.add("history-action-cell");cell.dataset.historyActionsEnhanced="true";
+  });
+  if(typeof applyRolePermissions==="function")applyRolePermissions();
+}
+function installHistoryActionToolbars(){
+  if(window._historyActionToolbarsInstalled)return;window._historyActionToolbarsInstalled=true;
+  [["renderHist","hbody"],["renderQHist","qhbody"],["renderPHist","phbody"],["renderGstHist","g-hbody"]].forEach(([name,bodyId])=>{
+    const original=window[name];if(typeof original!=="function")return;
+    window[name]=function(){const result=original.apply(this,arguments);enhanceHistoryActionRows(document.getElementById(bodyId));return result;};
+  });
+  document.addEventListener("click",event=>{
+    document.querySelectorAll(".history-more[open]").forEach(details=>{if(!details.contains(event.target))details.open=false;});
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape")document.querySelectorAll(".history-more[open]").forEach(details=>{details.open=false;});
+  });
+}
+installHistoryActionToolbars();
 
 
 // ═══ APP SHELL INTEGRATION ═══
