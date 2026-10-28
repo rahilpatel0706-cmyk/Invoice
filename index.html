@@ -5173,6 +5173,31 @@ function exportOrdersExcel(){
     "Documents":(o.documents||[]).map(d=>d.type+": "+d.number).join(" ; "),"Notes":o.notes})),"Order Book","jigar-order-book-"+todayLocal()+".xlsx");
 }
 
+// ═══ TRANSPORT CUSTOMER REPLACEMENT ═══
+// Selecting a saved customer is an explicit choice to use that customer's
+// linked details. Replace old values instead of only filling empty fields;
+// otherwise editing an invoice from customer A to B retains A's information.
+(function(){
+  window.autofillCustomer=function(){
+    const nameInput=document.getElementById('f-cname');
+    const typed=(nameInput?.value||'').trim().toLowerCase();
+    const match=customerDirectory[typed];
+    if(!match)return; // Unknown/new names never erase manually entered details.
+    const values={
+      'f-cmobile':match.mobile||'',
+      'f-cloc':match.location||'',
+      'f-addr':match.address||'',
+      'f-cgstin':match.gstin||'',
+      'f-transport':match.transport||'',
+      'f-dest':match.destination||''
+    };
+    Object.entries(values).forEach(([id,value])=>{
+      const field=document.getElementById(id);if(field)field.value=value;
+    });
+    showToast('✓ Loaded saved details for '+(match.name||nameInput.value.trim()),'success');
+  };
+})();
+
 
 // ═══ PERMANENT PRODUCT MASTER + DOCUMENT RECOVERY ═══
 var activeProductRecord=null;
