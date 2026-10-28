@@ -655,6 +655,136 @@ select option{background:var(--card);color:var(--text)}
 @media(max-width:700px){.panel{background:var(--bg)}.card,.htw,.ob-stat,.ob-toolbar,.hfilters,.transport-bulk,.cm-stats>div{box-shadow:0 8px 22px rgba(0,0,0,.18)}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
+/* ═══ PHONE WORKFLOW — ORDER BOOK + QUOTATIONS ONLY ═══
+   Billing, GST, transport, proforma and print documents are not targeted. */
+.m-field{display:block;min-width:0;margin:0}.m-field>span{display:none}
+.ob-grid .xdesc .m-field+.m-field{margin-top:4px}
+@media(max-width:700px){
+  /* Shared touch sizing only inside the approved screens. */
+  #panel-orders input,#panel-orders select,#panel-qhist input,#panel-qhist select,
+  #panel-quot input,#panel-quot select,#panel-quot textarea,
+  #orderModal input,#orderModal select,#orderModal textarea{font-size:16px!important}
+  #panel-orders,#panel-quot,#panel-qhist{padding:12px 10px}
+
+  /* Order Book dashboard and board. */
+  #panel-orders .ob-head{gap:12px}#panel-orders .ob-title{font-size:21px}
+  #panel-orders .ob-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:8px}
+  #panel-orders .ob-actions .btn{width:100%;min-height:44px;padding:10px}
+  #panel-orders .ob-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:visible}
+  #panel-orders .ob-stat{min-width:0;min-height:70px;padding:11px 12px}
+  #panel-orders .ob-stat:first-child{grid-column:1/-1;min-height:58px}
+  #panel-orders .ob-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+  #panel-orders .ob-toolbar .hsearch{grid-column:1/-1;min-width:0;width:100%;min-height:46px}
+  #panel-orders .ob-toolbar select{width:100%;min-width:0;min-height:44px}
+  #panel-orders .ob-toolbar .fclr{grid-column:1/-1;margin:0;min-height:44px}
+  #panel-orders .ob-view{grid-column:1/-1;display:flex;width:100%;margin:0}
+  #panel-orders .ob-view button{flex:1;min-height:42px}
+  #panel-orders .ob-board{gap:10px}#panel-orders .ob-col{padding:8px;min-height:0}
+  #panel-orders .ob-card{padding:14px;margin-bottom:10px}
+  #panel-orders .ob-order-no{font-size:12px}#panel-orders .ob-customer{font-size:16px}
+  #panel-orders .ob-products{font-size:13px}#panel-orders .ob-card-value{font-size:16px}
+  #panel-orders .ob-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  #panel-orders .ob-card-actions button{min-height:42px;font-size:12px}
+  #panel-orders .ob-card-actions button:only-child,#panel-orders .ob-card-actions .ob-make{grid-column:1/-1}
+  #panel-orders .ob-doc{font-size:11px;padding:7px 9px}
+
+  /* Order List becomes cards rather than a 1120px table. */
+  #ob-list-view{overflow:visible!important;background:transparent;border:0;box-shadow:none}
+  #ob-list-view .ob-list{display:block;min-width:0;width:100%}
+  #ob-list-view .ob-list thead{display:none}
+  #ob-list-view .ob-list tbody{display:grid;gap:12px}
+  #ob-list-view .ob-list tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--sh)}
+  #ob-list-view .ob-list td{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:start;min-width:0;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
+  #ob-list-view .ob-list td:before{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  #ob-list-view .ob-list td:nth-child(1):before{content:"Order / Status"}#ob-list-view .ob-list td:nth-child(2):before{content:"Date"}
+  #ob-list-view .ob-list td:nth-child(3):before{content:"Customer"}#ob-list-view .ob-list td:nth-child(4):before{content:"Products"}
+  #ob-list-view .ob-list td:nth-child(5):before{content:"Quantity"}#ob-list-view .ob-list td:nth-child(6):before{content:"Order Value"}
+  #ob-list-view .ob-list td:nth-child(7):before{content:"Status"}#ob-list-view .ob-list td:nth-child(8):before{content:"Documents"}
+  #ob-list-view .ob-list td:nth-child(9):before{content:"Actions"}
+  #ob-list-view .ob-list td:last-child{display:block;border-bottom:0}
+  #ob-list-view .ob-list td:last-child:before{display:block;margin-bottom:8px}
+  #ob-list-view .ob-list td[colspan]{display:block}#ob-list-view .ob-list td[colspan]:before{display:none}
+  #ob-list-view .ob-list .ob-cell-products{max-width:none;font-size:13px}
+  #ob-list-view .ob-list .ob-status-select{width:100%;max-width:none;min-height:44px}
+  #ob-list-view .ob-list .hbtns{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+  #ob-list-view .ob-list .hbtns button{min-height:40px;margin:0;padding:8px 12px}
+  #ob-list-view #ob-foot{flex-direction:column;align-items:flex-start;gap:5px;margin-top:12px;border:1px solid var(--border);border-radius:10px}
+
+  /* Full-screen order entry with a fixed header/footer and scrolling body. */
+  #orderModal{padding:0}
+  #orderModal .xbox{width:100%;height:100vh;height:100dvh;max-height:none;border:0;border-radius:0}
+  #orderModal .xbar{padding:12px 14px}#orderModal .xclose{min-height:40px;padding:8px 12px}
+  #orderModal .xbody{padding:14px 12px;-webkit-overflow-scrolling:touch}
+  #orderModal .fw{gap:18px}#orderModal .fr{gap:12px;margin-bottom:12px}
+  #orderModal .field label{font-size:12px}#orderModal input,#orderModal select{min-height:46px}
+  #orderModal textarea{min-height:84px!important}#orderModal .xdetails{padding:12px}
+  #orderModal .xdetails summary{font-size:13px;line-height:1.45}
+  #orderModal .ob-items-scroll{overflow:visible}#orderModal .ob-grid.xhead{display:none}
+  #orderModal #o-prows{display:grid;gap:12px}
+  #orderModal #o-prows .ob-grid.xrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;min-width:0!important;gap:12px;margin:0;padding:14px 12px;border:1px solid var(--border)!important;border-radius:12px;background:var(--card)}
+  #orderModal .m-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  #orderModal .m-field>span{display:block;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  #orderModal .xdesc{grid-column:1/-1;display:grid;gap:12px}#orderModal .xdesc .m-field+.m-field{margin-top:0}
+  #orderModal .m-hsn,#orderModal .m-amount{grid-column:1/-1}
+  #orderModal .rnum{grid-column:1;grid-row:1;text-align:left;color:var(--orange);font-size:14px}
+  #orderModal .rnum:before{content:"Product "}
+  #orderModal .rmbtn{grid-column:2;grid-row:1;justify-self:end;width:40px;height:40px;min-height:40px}
+  #orderModal .m-amount input{font-weight:800;color:var(--orange)}
+  #orderModal .ob-grid.xfoot{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0!important;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px}
+  #orderModal .ob-grid.xfoot span{display:none}
+  #orderModal .ob-grid.xfoot #o-foot-qty,#orderModal .ob-grid.xfoot #o-total{display:block;text-align:left!important;font-size:16px}
+  #orderModal .ob-grid.xfoot #o-foot-qty:before,#orderModal .ob-grid.xfoot #o-total:before{display:block;margin-bottom:3px;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+  #orderModal .ob-grid.xfoot #o-foot-qty:before{content:"Total quantity"}#orderModal .ob-grid.xfoot #o-total:before{content:"Order value before GST (₹)"}
+  #orderModal .addbtn{min-height:48px;margin-top:12px;font-size:14px}
+  #orderModal .xfoot{gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+  #orderModal .xfoot .xf-right{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+  #orderModal .xfoot .xf-right .btn{width:100%;min-height:48px}
+  #orderModal #o-delete{width:100%;min-height:44px;margin:0}
+
+  /* Quotation entry uses the same stacked product-card pattern. */
+  #panel-quot .card{overflow:visible!important;padding:16px 14px}
+  #panel-quot .field label{font-size:12px}#panel-quot input,#panel-quot select{min-height:46px}
+  #panel-quot textarea{min-height:88px}#panel-quot .ph{display:none}
+  #panel-quot #q-prows{display:grid;gap:12px;overflow:visible!important;border:0!important}
+  #panel-quot #q-prows .prow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;min-width:0!important;gap:12px;margin:0;padding:14px 12px;border:1px solid var(--border)!important;border-radius:12px;background:var(--card)}
+  #panel-quot .m-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  #panel-quot .m-field>span{display:block;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  #panel-quot .m-hsn,#panel-quot .m-desc,#panel-quot .m-make{grid-column:1/-1}
+  #panel-quot .rnum{grid-column:1;grid-row:1;text-align:left;color:var(--orange);font-size:14px}
+  #panel-quot .rnum:before{content:"Product "}
+  #panel-quot .rmbtn{grid-column:2;grid-row:1;justify-self:end;width:40px;height:40px;min-height:40px}
+  #panel-quot .m-amount input{font-weight:800;color:var(--orange)}
+  #panel-quot .addbtn{min-height:48px;margin-top:12px;font-size:14px}
+  #panel-quot .trow{min-height:44px;font-size:14px}
+  #panel-quot .abar{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #panel-quot .abar .btn{width:100%;min-height:48px;margin:0;padding:12px 10px}
+  #panel-quot .abar .btn-p{grid-column:auto}
+
+  /* Quotation filters and history cards. */
+  #panel-qhist .htbar>div:last-child{display:grid!important;grid-template-columns:1fr;width:100%;gap:8px}
+  #panel-qhist .htbar .vbtn,#panel-qhist .hsearch{width:100%;min-height:44px}
+  #panel-qhist .hfilters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #panel-qhist .hfilters label{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+  #panel-qhist .hfilters input,#panel-qhist .hfilters select{width:100%!important;min-height:44px}
+  #panel-qhist .hfilters .fclr{grid-column:auto;margin:0;min-height:44px}
+  #panel-qhist .htw{overflow:visible!important;background:transparent;border:0;box-shadow:none}
+  #panel-qhist .htable{display:block;min-width:0;width:100%}
+  #panel-qhist .htable thead{display:none}#panel-qhist .htable tbody{display:grid;gap:12px}
+  #panel-qhist .htable tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--sh)}
+  #panel-qhist .htable td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:start;min-width:0;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px!important}
+  #panel-qhist .htable td:before{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  #panel-qhist .htable td:nth-child(1):before{content:"Quotation"}#panel-qhist .htable td:nth-child(2):before{content:"Date"}
+  #panel-qhist .htable td:nth-child(3):before{content:"Customer"}#panel-qhist .htable td:nth-child(4):before{content:"Validity"}
+  #panel-qhist .htable td:nth-child(5):before{content:"GST Type"}#panel-qhist .htable td:nth-child(6):before{content:"Net Value"}
+  #panel-qhist .htable td:nth-child(7):before{content:"Actions"}
+  #panel-qhist .htable td:last-child{display:block;border-bottom:0}#panel-qhist .htable td:last-child:before{display:block;margin-bottom:8px}
+  #panel-qhist .htable td[colspan]{display:block}#panel-qhist .htable td[colspan]:before{display:none}
+  #panel-qhist .history-action-cell{min-width:0}#panel-qhist .history-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #panel-qhist .history-actions .ha-btn{width:100%;min-height:40px;font-size:12px}
+  #panel-qhist .history-more{grid-column:1/-1}#panel-qhist .history-actions .ha-more{width:100%}#panel-qhist .history-more-menu{position:static;width:100%;min-width:0;margin-top:6px}
+  #panel-qhist #qhfoot{flex-direction:column;align-items:flex-start;gap:5px;margin-top:12px;border:1px solid var(--border);border-radius:10px}
+}
+
 </style>
 </head>
 <body>
@@ -4905,7 +5035,7 @@ function openOrderModal(orderNo){
   document.getElementById("o-prows").innerHTML="";ORC=0;
   (o&&o.products.length?o.products:[{}]).forEach(addOrderItemRow);recalcOrderModal();
   document.getElementById("orderModal").classList.add("open");applyRolePermissions();
-  setTimeout(()=>document.getElementById("o-cname").focus(),80);
+  setTimeout(()=>{if(!window.matchMedia||window.matchMedia('(min-width:701px)').matches)document.getElementById('o-cname').focus();},80);
 }
 function closeOrderModal(){document.getElementById("orderModal").classList.remove("open");}
 function addOrderItemRow(p){
@@ -5809,6 +5939,77 @@ function printGstForm(){const d=collectGst();if(validateGst(d))openGstPrintDialo
       printInvoiceWindowWithFit(frame.contentWindow);return;
     }
     return originalPreviewPrint.apply(this,arguments);
+  };
+})();
+
+// ═══ MOBILE ORDER + QUOTATION WORKFLOW ═══
+// Adds real labels around the existing inputs without changing IDs, handlers,
+// calculations, permissions or desktop renderers. CSS turns those wrappers
+// into stacked product cards only on phone-sized screens.
+(function(){
+  function wrapMobileField(input,labelText,className){
+    if(!input||input.parentElement?.classList.contains('m-field'))return;
+    const label=document.createElement('label');label.className='m-field '+(className||'');
+    const caption=document.createElement('span');caption.textContent=labelText;
+    input.parentNode.insertBefore(label,input);label.appendChild(caption);label.appendChild(input);
+    if(!input.readOnly)input.setAttribute('enterkeyhint','next');
+    if(input.type==='number')input.setAttribute('inputmode','decimal');
+  }
+  function enhanceOrderProductRow(n){
+    wrapMobileField(document.getElementById('od-'+n),'Product name','m-desc');
+    wrapMobileField(document.getElementById('odd-'+n),'Details / specification','m-details');
+    wrapMobileField(document.getElementById('oh-'+n),'HSN','m-hsn');
+    wrapMobileField(document.getElementById('oq-'+n),'Quantity','m-qty');
+    wrapMobileField(document.getElementById('ou-'+n),'UOM','m-uom');
+    wrapMobileField(document.getElementById('or-'+n),'Rate ₹','m-rate');
+    wrapMobileField(document.getElementById('og-'+n),'GST %','m-gst');
+    wrapMobileField(document.getElementById('oa-'+n),'Amount ₹','m-amount');
+  }
+  function enhanceQuotationProductRow(n){
+    wrapMobileField(document.getElementById('qh-'+n),'HSN','m-hsn');
+    wrapMobileField(document.getElementById('qd-'+n),'Description / product','m-desc');
+    wrapMobileField(document.getElementById('qm-'+n),'Make / brand','m-make');
+    wrapMobileField(document.getElementById('qr2-'+n),'Unit rate ₹','m-rate');
+    wrapMobileField(document.getElementById('qq-'+n),'Quantity','m-qty');
+    wrapMobileField(document.getElementById('qg-'+n),'GST %','m-gst');
+    wrapMobileField(document.getElementById('qa-'+n),'Amount ₹','m-amount');
+  }
+  const originalOrderRow=window.addOrderItemRow;
+  if(typeof originalOrderRow==='function')window.addOrderItemRow=function(){
+    const result=originalOrderRow.apply(this,arguments);enhanceOrderProductRow(ORC);return result;
+  };
+  const originalQuotationRow=window.addQRow;
+  if(typeof originalQuotationRow==='function')window.addQRow=function(){
+    const result=originalQuotationRow.apply(this,arguments);enhanceQuotationProductRow(QRC);return result;
+  };
+
+  [['o-cmobile','tel'],['q-cmobile','tel'],['oq-1','decimal'],['or-1','decimal'],['qq-1','decimal'],['qr2-1','decimal']].forEach(([id,mode])=>{
+    const el=document.getElementById(id);if(el)el.setAttribute('inputmode',mode);
+  });
+
+  // Phone preview only. This style is inserted after the quotation's original
+  // stylesheet but is scoped to @media screen, so quotation printing is unchanged.
+  const mobileQuotationPreviewStyle=`<style id="mobile-quote-preview">
+@media screen and (max-width:700px){
+  body{padding:14px;font-size:12px}.wrap{max-width:none;width:100%}
+  .hg,.mg,.bs,.footer{display:grid;grid-template-columns:1fr;gap:12px}.hg .cr{text-align:left}.cr h1{font-size:18px}.logo{max-width:180px;max-height:52px}
+  .mc{padding:12px}.mr{gap:12px;flex-wrap:wrap}.mv{overflow-wrap:anywhere}
+  table:not(.tst),table:not(.tst) tbody{display:block;width:100%}table:not(.tst) thead{display:none}
+  table:not(.tst) tr{display:block;border:1px solid #d8dde5;border-radius:8px;margin:0 0 10px;padding:7px 9px;page-break-inside:avoid}
+  table:not(.tst) td{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border:0;padding:5px 2px;text-align:right!important;overflow-wrap:anywhere}
+  table:not(.tst) td:before{flex:0 0 76px;text-align:left;color:#555;font-weight:600}
+  table:not(.tst) td:nth-child(1){display:none}table:not(.tst) td:nth-child(2):before{content:"HSN"}
+  table:not(.tst) td:nth-child(3):before{content:"Product"}table:not(.tst) td:nth-child(4):before{content:"Make"}
+  table:not(.tst) td:nth-child(5):before{content:"Rate"}table:not(.tst) td:nth-child(6):before{content:"Qty"}
+  table:not(.tst) td:nth-child(7):before{content:"GST"}table:not(.tst) td:nth-child(8):before{content:"Amount"}
+  .product-title{margin:0}.tst{font-size:9px}.tst th,.tst td{padding:5px 3px}
+  .payrow{flex-direction:column}.bank{flex-direction:column;gap:7px}.paybox{min-width:0}.paybox .payqr{width:112px;height:112px}
+  .footer{margin-top:18px}.sig-space{height:38px}
+}
+</style>`;
+  const originalQuotationHTML=window.buildQuotHTML;
+  if(typeof originalQuotationHTML==='function')window.buildQuotHTML=function(){
+    return originalQuotationHTML.apply(this,arguments).replace('</head>',mobileQuotationPreviewStyle+'</head>');
   };
 })();
 
